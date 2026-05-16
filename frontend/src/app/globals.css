@@ -1,0 +1,57 @@
+@layer reset, base, tokens, recipes, utilities;
+
+/* Markdown inside assistant bubbles */
+.ai-prose {
+  font-size: 0.875rem;
+  line-height: 1.7;
+  color: inherit;
+}
+.ai-prose p {
+  margin-bottom: 0.5rem;
+}
+.ai-prose p:last-child {
+  margin-bottom: 0;
+}
+.ai-prose ul,
+.ai-prose ol {
+  padding-left: 1.25rem;
+  margin-bottom: 0.5rem;
+}
+.ai-prose li {
+  margin-bottom: 0.2rem;
+}
+.ai-prose h1,
+.ai-prose h2,
+.ai-prose h3 {
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+.ai-prose strong {
+  font-weight: 600;
+}
+.ai-prose code {
+  background: rgba(0, 0, 0, 0.07);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-family: var(--fonts-mono);
+  font-size: 0.78rem;
+}
+.dark .ai-prose code {
+  background: rgba(255, 255, 255, 0.1);
+}
+.ai-prose pre {
+  background: #1e1e1e;
+  color: #d4d4d4;
+  padding: 12px 16px;
+  border-radius: 8px;
+  overflow-x: auto;
+  margin: 8px 0;
+  font-size: 0.78rem;
+  font-family: var(--fonts-mono);
+}
+.ai-prose blockquote {
+  border-left: 3px solid #3b3bff;
+  padding-left: 12px;
+  color: #888;
+  margin: 8px 0;
+}

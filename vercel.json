@@ -1,0 +1,28 @@
+{
+  "version": 2,
+  "projects": [
+    {
+      "name": "ai-chat-frontend",
+      "root": "frontend",
+      "framework": "nextjs"
+    },
+    {
+      "name": "ai-chat-backend",
+      "root": "backend",
+      "buildCommand": "npm run build",
+      "outputDirectory": "dist",
+      "functions": {
+        "dist/server.js": {
+          "runtime": "nodejs20.x",
+          "maxDuration": 30
+        }
+      }
+    }
+  ],
+  "rewrites": [
+    {
+      "source": "/api/(.*)",
+      "destination": "https://ai-chat-backend.vercel.app/api/$1"
+    }
+  ]
+}

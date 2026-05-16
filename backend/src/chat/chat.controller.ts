@@ -1,0 +1,15 @@
+import { Body, Controller, HttpCode, HttpStatus, Post } from "@nestjs/common";
+import { ChatService } from "./chat.service";
+import { SendMessageDto } from "./dto/send-message.dto";
+
+@Controller("chat")
+export class ChatController {
+  constructor(private readonly chatService: ChatService) {}
+
+  // POST /api/chat
+  @Post()
+  @HttpCode(HttpStatus.OK)
+  sendMessage(@Body() dto: SendMessageDto) {
+    return this.chatService.sendMessage(dto);
+  }
+}
