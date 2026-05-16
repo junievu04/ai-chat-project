@@ -13,9 +13,12 @@ node_modules
 # testing
 /coverage
 
-# next.js
-/.next/
-/out/
+# next.js (matches frontend/.next, etc.)
+.next/
+out/
+
+# panda css (generated — run `npm run panda` in frontend/)
+frontend/src/vendors/styled-system/
 
 # production
 /build
