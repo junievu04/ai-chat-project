@@ -28,7 +28,7 @@ export default function ChatViewClient({ sessionId: routeSessionId }: Props) {
     shouldLoadOlder,
   );
 
-  useChatScroll(elementScrollRef, {
+  const { showScrollDown, scrollToBottom } = useChatScroll(elementScrollRef, {
     sessionId,
     setShouldLoadOlder,
     lastMessageId: messages.at(-1)?._id,
@@ -63,37 +63,61 @@ export default function ChatViewClient({ sessionId: routeSessionId }: Props) {
       {showEmptyState ? (
         <EmptyState />
       ) : (
-        <Flex
-          ref={elementScrollRef}
-          flex="1"
-          direction="column"
-          overflowY="auto"
-          px="5"
-          py="4"
-          gap="6"
-          className={css({ scrollbarWidth: "thin" })}
-        >
-          <Box maxW="3xl" mx="auto" w="full">
-            {isLoadingMore && (
-              <Flex
-                justifyContent="center"
-                py="2"
-                color="text.muted"
-                fontSize="xs"
-              >
-                Loading older messages…
+        <Box position="relative" flex="1" minH="0" overflow="hidden">
+          <Flex
+            ref={elementScrollRef}
+            position="absolute"
+            inset="0"
+            direction="column"
+            overflowY="auto"
+            px="5"
+            py="4"
+            gap="6"
+            className={css({ scrollbarWidth: "thin" })}
+          >
+            <Box maxW="3xl" mx="auto" w="full">
+              {isLoadingMore && (
+                <Flex
+                  justifyContent="center"
+                  py="2"
+                  color="text.muted"
+                  fontSize="xs"
+                >
+                  Loading older messages…
+                </Flex>
+              )}
+
+              <Flex direction="column" gap="6">
+                {messages.map((msg) => (
+                  <MessageBubble key={msg._id} message={msg} />
+                ))}
+
+                {isTyping && <TypingIndicator />}
               </Flex>
-            )}
+            </Box>
+          </Flex>
 
-            <Flex direction="column" gap="6">
-              {messages.map((msg) => (
-                <MessageBubble key={msg._id} message={msg} />
-              ))}
-
-              {isTyping && <TypingIndicator />}
-            </Flex>
-          </Box>
-        </Flex>
+          {showScrollDown && (
+            <Button
+              variant="secondary"
+              size="sm"
+              aria-label="Scroll to bottom"
+              onClick={() => scrollToBottom()}
+              position="absolute"
+              bottom="4"
+              left="50%"
+              zIndex="1"
+              minH="9"
+              w="9"
+              p="0"
+              borderRadius="full"
+              boxShadow="md"
+              className={css({ transform: "translateX(-50%)" })}
+            >
+              <Icon icon="solar:arrow-down-linear" width={20} height={20} />
+            </Button>
+          )}
+        </Box>
       )}
 
       <Box flexShrink={0} px="5" pb="6" pt="2" bg="bg.subtle">

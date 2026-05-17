@@ -1,8 +1,18 @@
 "use client";
 
-import { type RefObject, useEffect, useRef } from "react";
+import {
+  type RefObject,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 
 const TOP_OFFSET = 200;
+
+function getScrollBottom(el: HTMLElement) {
+  return el.scrollHeight - el.scrollTop - el.clientHeight;
+}
 
 export function useChatScroll(
   containerRef: RefObject<HTMLElement | null>,
@@ -20,9 +30,35 @@ export function useChatScroll(
     isLoadingMore: boolean;
   },
 ) {
+  const [showScrollDown, setShowScrollDown] = useState(false);
   const anchorRef = useRef<{ top: number; height: number } | null>(null);
   const prevLastMessageIdRef = useRef<string | undefined>(undefined);
   const readyRef = useRef(false);
+
+  const scrollToBottom = useCallback(
+    (behavior: ScrollBehavior = "smooth") => {
+      const el = containerRef.current;
+      if (!el) return;
+      el.scrollTo({ top: el.scrollHeight, behavior });
+    },
+    [containerRef],
+  );
+
+  const updateScrollState = useCallback(() => {
+    const el = containerRef.current;
+    if (!el || !sessionId) return;
+
+    const scrollBottom = getScrollBottom(el);
+    const atBottom = scrollBottom <= TOP_OFFSET;
+
+    if (!readyRef.current) {
+      if (atBottom) readyRef.current = true;
+    } else {
+      setShouldLoadOlder(el.scrollTop <= TOP_OFFSET);
+    }
+
+    setShowScrollDown(scrollBottom > 0 && messageCount > 0);
+  }, [containerRef, sessionId, messageCount, setShouldLoadOlder]);
 
   useEffect(() => {
     const el = containerRef.current;
@@ -30,31 +66,26 @@ export function useChatScroll(
     readyRef.current = false;
     prevLastMessageIdRef.current = undefined;
     setShouldLoadOlder(false);
+    setShowScrollDown(false);
 
     if (!el || !sessionId) return;
 
-    let timer: ReturnType<typeof setTimeout>;
-    const check = () => {
-      const atBottom =
-        el.scrollHeight - el.scrollTop - el.clientHeight <= TOP_OFFSET;
-      if (!readyRef.current) {
-        if (atBottom) readyRef.current = true;
-        return;
-      }
-      setShouldLoadOlder(el.scrollTop <= TOP_OFFSET);
-    };
+    el.scrollTop = el.scrollHeight;
 
+    let timer: ReturnType<typeof setTimeout>;
     const onScroll = () => {
       clearTimeout(timer);
-      timer = setTimeout(check, 200);
+      timer = setTimeout(updateScrollState, 200);
     };
 
     el.addEventListener("scroll", onScroll, { passive: true });
+    updateScrollState();
+
     return () => {
       el.removeEventListener("scroll", onScroll);
       clearTimeout(timer);
     };
-  }, [sessionId, containerRef.current, setShouldLoadOlder]);
+  }, [sessionId, updateScrollState, setShouldLoadOlder]);
 
   useEffect(() => {
     const el = containerRef.current;
@@ -70,12 +101,18 @@ export function useChatScroll(
       const diff = el.scrollHeight - anchor.height;
       if (diff > 0) el.scrollTop = anchor.top + diff;
       anchorRef.current = null;
+      updateScrollState();
       return;
     }
 
     if (lastMessageId && prevLastMessageIdRef.current !== lastMessageId) {
       prevLastMessageIdRef.current = lastMessageId;
       el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
+      return;
     }
-  }, [lastMessageId, messageCount, isLoadingMore]);
+
+    updateScrollState();
+  }, [lastMessageId, messageCount, isLoadingMore, updateScrollState]);
+
+  return { showScrollDown, scrollToBottom };
 }

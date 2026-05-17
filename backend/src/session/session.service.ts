@@ -62,7 +62,7 @@ export class SessionService {
     let nextResponse: string | null = null;
     if (batch.length > limit) {
       batch.pop();
-      next = String(batch[batch.length - 1]._id);
+      nextResponse = String(batch[batch.length - 1]._id);
     }
 
     const messages = batch.reverse();
