@@ -1,20 +1,22 @@
 "use client";
 
-import { Button, buttonRecipe } from "@/components/button";
+import { Button } from "@/components/button";
 import { Text } from "@/components/text";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { useChatContext } from "@/contexts/ChatContext";
 import { useSessionContext } from "@/contexts/SessionContext";
 import { deleteSession } from "@/lib/api";
+import type { Session } from "@/types";
 import { css, cx } from "@/vendors/styled-system/css";
-import { Box, Flex, Stack, styled } from "@/vendors/styled-system/jsx";
+import { Box, Center, Flex, Stack } from "@/vendors/styled-system/jsx";
 import { Icon } from "@iconify/react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 const NAV_TOP = [
-  { icon: "solar:home-2-bold-duotone", label: "Home", href: "/" },
+  { icon: "solar:home-2-bold-duotone", label: "Home", href: "/chat" },
   { icon: "solar:document-bold-duotone", label: "Document" },
   { icon: "solar:pen-new-square-bold-duotone", label: "Design" },
   { icon: "solar:presentation-graph-bold-duotone", label: "Presentation" },
@@ -23,268 +25,482 @@ const NAV_TOP = [
   { icon: "solar:widget-bold-duotone", label: "More" },
 ];
 
-const NAV_BOTTOM = [
-  { icon: "solar:layers-minimalistic-bold-duotone", label: "Templates" },
-  { icon: "solar:crown-bold-duotone", label: "Brand" },
-  { icon: "solar:folder-bold-duotone", label: "Projects" },
-];
+const SIDEBAR_COLLAPSED_KEY = "sidebar-collapsed";
 
-const sidebarStyles = css({
-  position: "relative",
+const navItemBase = css({
   display: "flex",
   flexDirection: "column",
-  height: "100%",
-  overflow: "hidden",
-  flexShrink: 0,
-  width: "72px",
-  borderRightWidth: "1px",
-  borderColor: "border",
-  bg: "bg",
-  transition: "width 0.2s ease",
-  _hover: {
-    width: "220px",
-    "& [data-expand]": { opacity: 1, pointerEvents: "auto" },
-    "& [data-brand-text]": { opacity: 1 },
-    "& [data-brand-icon]": { opacity: 0 },
-  },
-});
-
-const expandHidden = css({
-  opacity: 0,
-  pointerEvents: "none",
-  transition: "opacity 0.15s ease",
-  whiteSpace: "nowrap",
-});
-
-const navItemClass = css({
-  display: "flex",
   alignItems: "center",
-  gap: "3",
-  width: "100%",
-  px: "3",
-  py: "2.5",
+  justifyContent: "center",
+  gap: "0.5",
+  flexShrink: 0,
+  py: "2",
+  px: "1",
   borderRadius: "lg",
-  fontSize: "sm",
+  fontSize: "12px",
+  lineHeight: "1.3",
+  fontWeight: "500",
   color: "text.muted",
   cursor: "pointer",
   transition: "background 0.15s ease, color 0.15s ease",
   _hover: { bg: "bg.hover", color: "text" },
 });
 
-const SessionLink = styled(Link, {
-  base: {
-    display: "flex",
-    alignItems: "center",
-    gap: "2",
-    px: "3",
-    py: "2",
-    borderRadius: "lg",
-    fontSize: "xs",
-    color: "text.muted",
-    transition: "background 0.15s ease, color 0.15s ease",
-    overflow: "hidden",
-    _hover: { bg: "bg.hover", color: "text" },
-  },
-  variants: {
-    active: {
-      true: { bg: "brand-muted", color: "brand" },
-      false: {},
-    },
-  },
+const navItemExpanded = css({
+  flexDirection: "row",
+  justifyContent: "flex-start",
+  gap: "2.5",
+  px: "3",
+  py: "2.5",
+  fontSize: "md",
+  lineHeight: "1.4",
 });
+
+const navItemActive = css({
+  bg: "bg",
+  color: "text",
+  boxShadow: "sm",
+});
+
+const historyRowBase = css({
+  display: "flex",
+  alignItems: "center",
+  gap: "1",
+  flexShrink: 0,
+  borderRadius: "lg",
+  transition: "background 0.15s ease",
+  _hover: { bg: "bg.hover" },
+});
+
+const historyRowActive = css({
+  bg: "bg",
+  boxShadow: "sm",
+});
+
+const historyLinkBase = css({
+  display: "flex",
+  alignItems: "center",
+  gap: "2",
+  flex: 1,
+  minW: 0,
+  px: "2.5",
+  py: "2",
+  borderRadius: "lg",
+  fontSize: "sm",
+  color: "text.muted",
+  transition: "color 0.15s ease",
+  _hover: { color: "text" },
+});
+
+const historyLinkActive = css({
+  color: "brand",
+  fontWeight: "500",
+});
+
+const deleteBtnClass = css({
+  flexShrink: 0,
+  opacity: 0,
+  transition: "opacity 0.15s ease",
+  ".group:hover &": { opacity: 1 },
+  ".group:focus-within &": { opacity: 1 },
+});
+
+function NavItem({
+  icon,
+  label,
+  href,
+  active,
+  expanded,
+}: {
+  icon: string;
+  label: string;
+  href?: string;
+  active?: boolean;
+  expanded: boolean;
+}) {
+  const className = cx(
+    navItemBase,
+    expanded && navItemExpanded,
+    active && navItemActive,
+  );
+  const content = (
+    <>
+      <Icon icon={icon} width={20} height={20} />
+      {expanded ? (
+        <span>{label}</span>
+      ) : (
+        <span
+          className={css({
+            maxW: "full",
+            textAlign: "center",
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+            whiteSpace: "nowrap",
+          })}
+        >
+          {label}
+        </span>
+      )}
+    </>
+  );
+
+  if (href) {
+    return (
+      <Link
+        href={href}
+        className={className}
+        title={!expanded ? label : undefined}
+        aria-current={active ? "page" : undefined}
+      >
+        {content}
+      </Link>
+    );
+  }
+
+  return (
+    <Button
+      variant="none"
+      size="sm"
+      className={className}
+      title={!expanded ? label : undefined}
+    >
+      {content}
+    </Button>
+  );
+}
+
+function SessionHistoryItem({
+  session,
+  isActive,
+  expanded,
+  onDeleteClick,
+}: {
+  session: Session;
+  isActive: boolean;
+  expanded: boolean;
+  onDeleteClick: (session: Session) => void;
+}) {
+  const title = session.title || "Untitled chat";
+
+  if (!expanded) {
+    return (
+      <Flex
+        className={cx(
+          historyRowBase,
+          "group",
+          isActive && historyRowActive,
+          css({ justifyContent: "center", px: "1" }),
+        )}
+      >
+        <Link
+          href={`/chat/${session._id}`}
+          title={title}
+          className={css({
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            py: "2",
+            px: "2",
+            borderRadius: "lg",
+            color: isActive ? "brand" : "text.muted",
+            _hover: { color: isActive ? "brand" : "text" },
+          })}
+          aria-current={isActive ? "page" : undefined}
+        >
+          <Icon
+            icon="solar:chat-round-line-bold-duotone"
+            width={18}
+            height={18}
+          />
+        </Link>
+        <Button
+          variant="none"
+          size="sm"
+          className={deleteBtnClass}
+          onClick={() => onDeleteClick(session)}
+          aria-label={`Delete ${title}`}
+          minH="6"
+          w="6"
+          p="0"
+          color="text.faint"
+          _hover={{ color: "danger" }}
+        >
+          <Icon icon="solar:trash-bin-trash-linear" width={16} height={16} />
+        </Button>
+      </Flex>
+    );
+  }
+
+  return (
+    <Flex className={cx(historyRowBase, "group", isActive && historyRowActive)}>
+      <Link
+        href={`/chat/${session._id}`}
+        className={cx(historyLinkBase, isActive && historyLinkActive)}
+        aria-current={isActive ? "page" : undefined}
+      >
+        <Icon
+          icon="solar:chat-round-line-bold-duotone"
+          width={16}
+          height={16}
+          className={css({ flexShrink: 0 })}
+        />
+        <Box flex="1" truncate>
+          {title}
+        </Box>
+      </Link>
+      <Button
+        variant="none"
+        size="sm"
+        className={cx(deleteBtnClass, css({ mr: "1", opacity: 1 }))}
+        onClick={() => onDeleteClick(session)}
+        aria-label={`Delete ${title}`}
+        minH="7"
+        w="7"
+        p="0"
+        color="text.faint"
+        _hover={{ color: "danger" }}
+      >
+        <Icon icon="solar:trash-bin-trash-linear" width={16} height={16} />
+      </Button>
+    </Flex>
+  );
+}
 
 export function SidebarNav() {
   const router = useRouter();
   const pathname = usePathname();
   const { sessions, setSessions } = useSessionContext();
   const { dispatch } = useChatContext();
-  const [expanded, setExpanded] = useState(false);
+  const [expanded, setExpanded] = useState(true);
+  const [pendingDelete, setPendingDelete] = useState<Session | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
-  const handleDelete = async (id: string, e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setSessions((prev) => prev.filter((s) => s._id !== id));
-    dispatch({ type: "CLEAR_SESSION", sessionId: id });
-    await deleteSession(id).catch(console.error);
-    if (pathname === `/chat/${id}`) router.push("/chat");
+  useEffect(() => {
+    const stored = localStorage.getItem(SIDEBAR_COLLAPSED_KEY);
+    if (stored !== null) setExpanded(stored !== "true");
+  }, []);
+
+  const toggleSidebar = () => {
+    setExpanded((prev) => {
+      const next = !prev;
+      localStorage.setItem(SIDEBAR_COLLAPSED_KEY, next ? "false" : "true");
+      return next;
+    });
   };
 
+  const isChatRoute = pathname === "/chat" || pathname.startsWith("/chat/");
   const activeId = pathname.startsWith("/chat/")
     ? pathname.split("/")[2]
     : null;
 
+  const confirmDelete = async () => {
+    if (!pendingDelete) return;
+    const id = pendingDelete._id;
+    setIsDeleting(true);
+    try {
+      setSessions((prev) => prev.filter((s) => s._id !== id));
+      dispatch({ type: "CLEAR_SESSION", sessionId: id });
+      await deleteSession(id);
+      if (pathname === `/chat/${id}`) router.push("/chat");
+      setPendingDelete(null);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const deleteTitle = pendingDelete?.title || "Untitled chat";
+
   return (
-    <Box as="aside" className={sidebarStyles}>
-      <Flex
-        alignItems="center"
-        h="14"
-        px="4"
+    <>
+      <Box
+        as="aside"
+        display="flex"
+        flexDirection="column"
+        h="full"
         flexShrink={0}
         overflow="hidden"
-        borderBottomWidth="1px"
+        borderRightWidth="1px"
         borderColor="border"
-        position="relative"
+        bg="bg.subtle"
+        w={expanded ? "248px" : "84px"}
+        transition="width 0.2s ease"
+        p="2"
       >
-        <Text
-          weight="bold"
-          tone="brand"
-          variant="body-2"
-          className={css({
-            opacity: 0,
-            transition: "opacity 0.15s",
-          })}
-          data-brand-text
+        <Flex
+          alignItems="center"
+          justifyContent={expanded ? "space-between" : "center"}
+          px={expanded ? "2.5" : "2"}
+          py="2"
+          flexShrink={0}
+          gap="2"
         >
-          <strong>TEMPLATE</strong>.NET
-        </Text>
-        <Box
-          position="absolute"
-          left="4"
-          data-brand-icon
-          className={css({ transition: "opacity 0.15s" })}
-        >
-          <Icon
-            icon="solar:chat-round-bold-duotone"
-            width={24}
-            color="#3B3BFF"
-          />
-        </Box>
-      </Flex>
-
-      <Stack gap="0" py="2" flexShrink={0}>
-        {NAV_TOP.map((item) =>
-          item.href ? (
-            <Link key={item.label} href={item.href} className={navItemClass}>
-              <Icon icon={item.icon} width={20} />
-              <span className={expandHidden} data-expand>
-                {item.label}
-              </span>
-            </Link>
-          ) : (
-            <Button
-              key={item.label}
-              variant="ghost"
-              size="sm"
-              className={navItemClass}
-            >
-              <Icon icon={item.icon} width={20} />
-              <span className={expandHidden} data-expand>
-                {item.label}
-              </span>
-            </Button>
-          ),
-        )}
-      </Stack>
-
-      <Box mx="3" my="1" h="1px" bg="border" flexShrink={0} />
-
-      <Box px="2" py="1" flexShrink={0}>
-        <Link
-          href="/chat"
-          className={cx(
-            buttonRecipe({ variant: "dashed", size: "sm", fullWidth: true }),
-            expandHidden,
-          )}
-          data-expand
-        >
-          <Flex alignItems="center" gap="2" justifyContent="center">
-            <Icon icon="solar:add-square-bold" width={16} />
-            New Chat
-          </Flex>
-        </Link>
-      </Box>
-
-      <Stack
-        flex="1"
-        overflowY="auto"
-        px="2"
-        py="1"
-        gap="0.5"
-        className={css({ scrollbarWidth: "thin" })}
-      >
-        {sessions.slice(0, expanded ? undefined : 8).map((s) => (
-          <SessionLink
-            key={s._id}
-            href={`/chat/${s._id}`}
-            active={activeId === s._id}
-            className={expandHidden}
-            data-expand
+          <Link
+            href="/chat"
+            title="Template.net"
+            className={css({
+              display: expanded ? "flex" : "none",
+              alignItems: "center",
+              justifyContent: "center",
+              flexShrink: 0,
+              w: "8",
+              h: "8",
+              borderRadius: "md",
+              bg: "brand",
+              color: "white",
+              fontSize: "md",
+              fontWeight: "bold",
+              lineHeight: "1",
+              fontFamily: "sans",
+              transition: "transform 0.15s ease",
+              _hover: { transform: "scale(1.04)" },
+            })}
           >
-            <Icon icon="solar:chat-line-linear" width={16} />
-            <Box flex="1" truncate>
-              {s.title}
-            </Box>
-            <Button
-              variant="none"
-              size="sm"
-              onClick={(e) => handleDelete(s._id, e)}
-              aria-label="Delete"
-              _groupHover={{ opacity: 1 }}
-              color="text.faint"
-              _hover={{ color: "danger" }}
-            >
-              <Icon icon="solar:trash-bin-trash-linear" width={16} />
-            </Button>
-          </SessionLink>
-        ))}
-
-        {sessions.length > 8 && (
+            T
+          </Link>
+          {expanded && <Box flex="1" />}
           <Button
             variant="ghost"
             size="sm"
-            fullWidth
-            onClick={() => setExpanded((v) => !v)}
-            className={expandHidden}
-            data-expand
-            justifyContent="flex-start"
-            color="text.faint"
+            onClick={toggleSidebar}
+            aria-label={expanded ? "Collapse sidebar" : "Expand sidebar"}
+            aria-expanded={expanded}
+            flexShrink={0}
+            minW="9"
+            minH="9"
+            w="9"
+            h="9"
+            p="0"
+            borderRadius="lg"
+            title={expanded ? "Collapse" : "Expand"}
           >
-            {expanded ? "↑ Show less" : `+${sessions.length - 8} more`}
+            <Icon
+              icon={
+                expanded
+                  ? "solar:sidebar-minimalistic-linear"
+                  : "solar:sidebar-minimalistic-bold-duotone"
+              }
+              width={20}
+              height={20}
+            />
           </Button>
-        )}
-      </Stack>
+        </Flex>
 
-      <Box flexShrink={0} borderTopWidth="1px" borderColor="border">
-        <Stack gap="0" py="1">
-          {NAV_BOTTOM.map((item) => (
-            <Button
-              key={item.label}
-              variant="ghost"
-              size="sm"
-              className={navItemClass}
-            >
-              <Icon icon={item.icon} width={20} />
-              <span className={expandHidden} data-expand>
-                {item.label}
-              </span>
-            </Button>
-          ))}
-        </Stack>
+        <Stack
+          flex="1"
+          minH="0"
+          overflowY="auto"
+          gap="0"
+          className={css({ scrollbarWidth: "thin" })}
+        >
+          <Stack gap="0" py="1" flexShrink={0}>
+            {NAV_TOP.map((item) => (
+              <NavItem
+                key={item.label}
+                icon={item.icon}
+                label={item.label}
+                href={item.href}
+                active={!!item.href && item.href === "/chat" && isChatRoute}
+                expanded={expanded}
+              />
+            ))}
+          </Stack>
 
-        <Stack gap="1" px="2" pb="2">
-          <Button variant="ghost" size="sm" className={navItemClass}>
-            <Icon icon="solar:login-2-bold-duotone" width={20} />
-            <span className={expandHidden} data-expand>
-              Sign In
-            </span>
-          </Button>
+          <Box
+            mx={expanded ? "4" : "3"}
+            my="2"
+            h="1px"
+            bg="border"
+            flexShrink={0}
+          />
 
-          <Button
-            variant="primary"
-            size="sm"
-            fullWidth
-            className={expandHidden}
-            data-expand
-            leftIcon={<Icon icon="solar:crown-bold" width={16} />}
-          >
-            Upgrade
-          </Button>
+          <Box flexShrink={0} px={expanded ? "3" : "1"} pb="2">
+            {expanded ? (
+              <Flex alignItems="center" justifyContent="space-between" mb="2">
+                <Text variant="body-2" tone="secondary" weight="semibold">
+                  Chat history
+                </Text>
+                <Link
+                  href="/chat"
+                  className={css({
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    w: "7",
+                    h: "7",
+                    borderRadius: "md",
+                    color: "brand",
+                    _hover: { bg: "brand-muted" },
+                  })}
+                  title="New chat"
+                >
+                  <Icon icon="solar:add-square-bold" width={22} height={22} />
+                </Link>
+              </Flex>
+            ) : (
+              <Flex justifyContent="center" mb="2">
+                <Link
+                  href="/chat"
+                  className={css({
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    w: "8",
+                    h: "8",
+                    borderRadius: "lg",
+                    color: "brand",
+                    _hover: { bg: "brand-muted" },
+                  })}
+                  title="New chat"
+                >
+                  <Icon icon="solar:add-square-bold" width={18} height={18} />
+                </Link>
+              </Flex>
+            )}
 
-          <Box className={expandHidden} data-expand>
-            <ThemeToggle />
+            <Stack gap="0.5" display={expanded ? "flex" : "none"}>
+              {sessions.length === 0
+                ? expanded && (
+                    <Text variant="body-2" tone="secondary" py="1">
+                      No chats yet
+                    </Text>
+                  )
+                : sessions.map((s) => (
+                    <SessionHistoryItem
+                      key={s._id}
+                      session={s}
+                      isActive={activeId === s._id}
+                      expanded={expanded}
+                      onDeleteClick={setPendingDelete}
+                    />
+                  ))}
+            </Stack>
           </Box>
         </Stack>
+
+        <Center
+          flexShrink={0}
+          borderTopWidth="1px"
+          borderColor="border"
+          px={expanded ? "2" : "1"}
+          py="2"
+        >
+          <ThemeToggle compact={!expanded} />
+        </Center>
       </Box>
-    </Box>
+
+      <ConfirmDialog
+        open={!!pendingDelete}
+        title="Delete this chat?"
+        description={`"${deleteTitle}" will be permanently removed. This cannot be undone.`}
+        confirmLabel="Delete"
+        cancelLabel="Cancel"
+        variant="danger"
+        isLoading={isDeleting}
+        onConfirm={confirmDelete}
+        onCancel={() => !isDeleting && setPendingDelete(null)}
+      />
+    </>
   );
 }

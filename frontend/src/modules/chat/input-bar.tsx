@@ -20,15 +20,15 @@ const InputShell = styled(Box, {
   base: {
     maxW: "3xl",
     mx: "auto",
-    borderRadius: "xl",
-    bg: "surface",
+    borderRadius: "2xl",
+    bg: "bg",
     borderWidth: "1px",
-    borderColor: "border.strong",
+    borderColor: "border",
     boxShadow: "sm",
-    transition: "box-shadow 0.15s ease",
+    transition: "box-shadow 0.15s ease, border-color 0.15s ease",
     _focusWithin: {
       borderColor: "brand",
-      boxShadow: "0 0 0 3px rgba(59, 59, 255, 0.12)",
+      boxShadow: "0 0 0 3px rgba(59, 59, 255, 0.1)",
     },
   },
 });
@@ -49,16 +49,19 @@ const HiddenInput = styled("input", {
 
 const TextArea = styled("textarea", {
   base: {
-    flex: 1,
+    width: "100%",
     resize: "none",
     bg: "transparent",
     outline: "none",
     fontSize: "sm",
     lineHeight: "relaxed",
     color: "text",
-    minH: "22px",
+    minH: "48px",
     maxH: "200px",
     fontFamily: "sans",
+    px: "4",
+    pt: "4",
+    pb: "2",
     _placeholder: { color: "text.faint" },
     _disabled: { opacity: 0.6 },
   },
@@ -178,59 +181,69 @@ export function InputBar({ onSend, isTyping }: Props) {
         </Flex>
       )}
 
-      <Flex alignItems="flex-end" gap="2" px="3" py="2.5">
-        <HiddenInput
-          ref={fileInputRef}
-          type="file"
-          accept={ACCEPTED}
-          onChange={handleFileChange}
-          disabled={uploading}
-        />
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => fileInputRef.current?.click()}
-          disabled={uploading}
-          minH="9"
-          w="9"
-          p="0"
-          borderWidth="1px"
-          borderColor="border.strong"
-          borderRadius="full"
-          title="Attach file"
-        >
-          {uploading ? (
-            <Icon
-              icon="solar:refresh-circle-bold-duotone"
-              width={20}
-              className={css({ animation: "spin 1s linear infinite" })}
-            />
-          ) : (
-            <Icon icon="solar:add-square-bold-duotone" width={20} />
-          )}
-        </Button>
+      <HiddenInput
+        ref={fileInputRef}
+        type="file"
+        accept={ACCEPTED}
+        onChange={handleFileChange}
+        disabled={uploading}
+      />
 
-        <TextArea
-          ref={textareaRef}
-          value={text}
-          onChange={(e) => {
-            setText(e.target.value);
-            autoResize();
-          }}
-          onKeyDown={handleKeyDown}
-          placeholder="Ask template.net"
-          rows={1}
-          disabled={isTyping}
-        />
+      <TextArea
+        ref={textareaRef}
+        value={text}
+        onChange={(e) => {
+          setText(e.target.value);
+          autoResize();
+        }}
+        onKeyDown={handleKeyDown}
+        placeholder="Ask template.net"
+        rows={1}
+        disabled={isTyping}
+      />
+
+      <Flex
+        alignItems="center"
+        justifyContent="space-between"
+        px="3"
+        pb="3"
+        gap="2"
+      >
+        <Flex alignItems="center" gap="1.5" flexWrap="wrap">
+          <Button
+            variant="none"
+            size="sm"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={uploading}
+            minH="8"
+            w="8"
+            p="0"
+            borderRadius="lg"
+            borderWidth="1px"
+            borderColor="border"
+            title="Attach file"
+          >
+            {uploading ? (
+              <Icon
+                icon="solar:refresh-circle-bold-duotone"
+                width={18}
+                className={css({ animation: "spin 1s linear infinite" })}
+              />
+            ) : (
+              <Icon icon="solar:add-circle-linear" width={20} />
+            )}
+          </Button>
+        </Flex>
 
         <Button
           variant={canSend ? "primary" : "secondary"}
           size="md"
           onClick={handleSubmit}
           disabled={!canSend}
-          leftIcon={<Icon icon="solar:stars-bold" width={16} />}
+          borderRadius="xl"
+          px="5"
         >
-          Generate Free
+          Generate
         </Button>
       </Flex>
     </InputShell>

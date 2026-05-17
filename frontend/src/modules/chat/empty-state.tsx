@@ -1,16 +1,15 @@
 "use client";
 
 import { Text } from "@/components/text";
-import { css } from "@/vendors/styled-system/css";
-import { Box, Flex, Stack } from "@/vendors/styled-system/jsx";
+import { Flex, Stack } from "@/vendors/styled-system/jsx";
 import { Icon } from "@iconify/react";
 
 const SUGGESTIONS = [
-  "✍️ Write a blog post",
-  "📊 Create a report",
-  "🎨 Design ideas",
-  "💡 Brainstorm topics",
-  "📝 Draft an email",
+  { label: "Write a blog post", icon: "solar:pen-bold-duotone" },
+  { label: "Create a report", icon: "solar:chart-bold-duotone" },
+  { label: "Design ideas", icon: "solar:palette-bold-duotone" },
+  { label: "Brainstorm topics", icon: "solar:lightbulb-bold-duotone" },
+  { label: "Draft an email", icon: "solar:letter-bold-duotone" },
 ];
 
 export function EmptyState() {
@@ -48,19 +47,23 @@ export function EmptyState() {
 
       <Flex flexWrap="wrap" justifyContent="center" gap="2">
         {SUGGESTIONS.map((s) => (
-          <Box
-            key={s}
+          <Flex
+            key={s.label}
+            alignItems="center"
+            gap="1.5"
             px="3"
             py="1.5"
             borderRadius="full"
             fontSize="xs"
             borderWidth="1px"
-            borderColor="border"
-            color="text.muted"
-            bg="bg.subtle"
+            borderColor="colorPalette.300"
+            color="colorPalette.600"
+            bg="colorPalette.50"
+            colorPalette="blue"
           >
-            {s}
-          </Box>
+            <Icon icon={s.icon} width={14} />
+            {s.label}
+          </Flex>
         ))}
       </Flex>
     </Flex>

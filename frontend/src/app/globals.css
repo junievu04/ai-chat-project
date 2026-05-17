@@ -1,6 +1,12 @@
 @layer reset, base, tokens, recipes, utilities;
 
-/* Markdown inside assistant bubbles */
+/* Keep Iconify SVGs at their declared size inside flex layouts */
+svg.iconify {
+  flex-shrink: 0;
+  max-width: none;
+  max-height: none;
+}
+
 .ai-prose {
   font-size: 0.875rem;
   line-height: 1.7;
@@ -18,7 +24,17 @@
   margin-bottom: 0.5rem;
 }
 .ai-prose li {
-  margin-bottom: 0.2rem;
+  margin-bottom: 0.35rem;
+}
+.ai-prose li p {
+  margin-bottom: 0;
+}
+.ai-prose ul {
+  list-style: none;
+  padding-left: 0;
+}
+.ai-prose li::marker {
+  content: none;
 }
 .ai-prose h1,
 .ai-prose h2,

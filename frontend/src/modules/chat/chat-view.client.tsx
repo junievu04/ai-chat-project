@@ -37,23 +37,23 @@ export default function ChatViewClient({ sessionId: routeSessionId }: Props) {
   });
 
   return (
-    <Flex direction="column" h="full" overflow="hidden" bg="bg">
+    <Flex direction="column" flex="1" minH="0" overflow="hidden" bg="bg.subtle">
       {sessionId && (
         <Flex
-          display={{ base: "flex", md: "none" }}
           alignItems="center"
           gap="2"
-          px="4"
+          px="5"
           py="3"
           flexShrink={0}
-          borderBottomWidth="1px"
-          borderColor="border"
+          bg="bg.subtle"
         >
           <Button
             variant="ghost"
             size="sm"
-            leftIcon={<Icon icon="solar:arrow-left-linear" width={18} />}
-            onClick={() => router.back()}
+            leftIcon={<Icon icon="solar:alt-arrow-left-linear" width={18} />}
+            onClick={() => router.push("/chat")}
+            color="text.muted"
+            fontWeight="normal"
           >
             Back
           </Button>
@@ -68,39 +68,35 @@ export default function ChatViewClient({ sessionId: routeSessionId }: Props) {
           flex="1"
           direction="column"
           overflowY="auto"
-          px="4"
-          py="6"
-          gap="2"
+          px="5"
+          py="4"
+          gap="6"
           className={css({ scrollbarWidth: "thin" })}
         >
-          {isLoadingMore && (
-            <Flex
-              justifyContent="center"
-              py="2"
-              color="textMuted"
-              fontSize="xs"
-            >
-              Loading older messages…
+          <Box maxW="3xl" mx="auto" w="full">
+            {isLoadingMore && (
+              <Flex
+                justifyContent="center"
+                py="2"
+                color="text.muted"
+                fontSize="xs"
+              >
+                Loading older messages…
+              </Flex>
+            )}
+
+            <Flex direction="column" gap="6">
+              {messages.map((msg) => (
+                <MessageBubble key={msg._id} message={msg} />
+              ))}
+
+              {isTyping && <TypingIndicator />}
             </Flex>
-          )}
-
-          {messages.map((msg) => (
-            <MessageBubble key={msg._id} message={msg} />
-          ))}
-
-          {isTyping && <TypingIndicator />}
+          </Box>
         </Flex>
       )}
 
-      <Box
-        flexShrink={0}
-        px="4"
-        pb="5"
-        pt="2"
-        borderTopWidth="1px"
-        borderColor="border"
-        bg="bg"
-      >
+      <Box flexShrink={0} px="5" pb="6" pt="2" bg="bg.subtle">
         <InputBar onSend={send} isTyping={isTyping} />
       </Box>
     </Flex>

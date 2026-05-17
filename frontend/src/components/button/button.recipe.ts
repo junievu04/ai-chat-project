@@ -18,6 +18,9 @@ export const buttonRecipe = cva({
       cursor: "not-allowed",
       pointerEvents: "none",
     },
+    "& svg": {
+      flexShrink: 0,
+    },
   },
   variants: {
     variant: {

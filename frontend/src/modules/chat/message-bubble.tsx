@@ -1,5 +1,6 @@
 "use client";
 
+import { Text } from "@/components/text";
 import { css } from "@/vendors/styled-system/css";
 import { Box, Flex, styled } from "@/vendors/styled-system/jsx";
 import type { Attachment, Message } from "@/types";
@@ -10,56 +11,96 @@ interface Props {
   message: Message;
 }
 
-const Row = styled(Flex, {
+const UserRow = styled(Flex, {
   base: {
-    gap: "3",
-    alignItems: "flex-start",
+    justifyContent: "flex-end",
     animation: "fadeSlide 0.2s ease forwards",
   },
-  variants: {
-    role: {
-      user: { flexDirection: "row-reverse" },
-      assistant: {},
-    },
+});
+
+const AssistantBlock = styled(Box, {
+  base: {
+    maxW: "full",
+    animation: "fadeSlide 0.2s ease forwards",
   },
 });
 
 export function MessageBubble({ message }: Props) {
   const isUser = message.role === "user";
 
-  return (
-    <Row role={isUser ? "user" : "assistant"}>
-      <Flex
-        alignItems="center"
-        justifyContent="center"
-        w="8"
-        h="8"
-        borderRadius="full"
-        flexShrink={0}
-        mt="0.5"
-        bg={isUser ? "bg.subtle" : "brand"}
-        color={isUser ? "text.muted" : "white"}
-        borderWidth={isUser ? "1px" : "0"}
-        borderColor="border"
-      >
-        <Icon
-          icon={isUser ? "solar:user-bold" : "solar:stars-bold"}
-          width={isUser ? 16 : 14}
-        />
-      </Flex>
+  if (isUser) {
+    return (
+      <UserRow>
+        <Flex direction="column" gap="1.5" alignItems="flex-end" maxW="85%">
+          {message.attachments?.length > 0 && (
+            <Flex flexWrap="wrap" gap="2" justifyContent="flex-end">
+              {message.attachments.map((att: Attachment, i: number) =>
+                att.type === "image" ? (
+                  <img
+                    key={i}
+                    src={att.url}
+                    alt={att.name}
+                    className={css({
+                      maxW: "200px",
+                      maxH: "150px",
+                      borderRadius: "xl",
+                      objectFit: "cover",
+                      borderWidth: "1px",
+                      borderColor: "border",
+                    })}
+                  />
+                ) : (
+                  <a
+                    key={i}
+                    href={att.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className={css({
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "1.5",
+                      px: "3",
+                      py: "2",
+                      borderRadius: "xl",
+                      fontSize: "xs",
+                      borderWidth: "1px",
+                      borderColor: "border",
+                      bg: "bg",
+                      color: "text.muted",
+                    })}
+                  >
+                    <Icon icon="solar:file-bold-duotone" width={14} />
+                    {att.name}
+                  </a>
+                ),
+              )}
+            </Flex>
+          )}
 
-      <Flex
-        direction="column"
-        gap="1.5"
-        maxW="75%"
-        alignItems={isUser ? "flex-end" : "flex-start"}
-      >
-        {message.attachments?.length > 0 && (
-          <Flex
-            flexWrap="wrap"
-            gap="2"
-            justifyContent={isUser ? "flex-end" : "flex-start"}
+          <Box
+            px="4"
+            py="2.5"
+            fontSize="sm"
+            lineHeight="relaxed"
+            borderRadius="2xl"
+            bg="#e8ecf4"
+            color="text"
+            maxW="fit-content"
           >
+            <Box whiteSpace="pre-wrap" wordBreak="break-word">
+              {message.content}
+            </Box>
+          </Box>
+        </Flex>
+      </UserRow>
+    );
+  }
+
+  return (
+    <AssistantBlock>
+      <Flex direction="column" gap="3" maxW="full">
+        {message.attachments?.length > 0 && (
+          <Flex flexWrap="wrap" gap="2">
             {message.attachments.map((att: Attachment, i: number) =>
               att.type === "image" ? (
                 <img
@@ -91,7 +132,7 @@ export function MessageBubble({ message }: Props) {
                     fontSize: "xs",
                     borderWidth: "1px",
                     borderColor: "border",
-                    bg: "bg.subtle",
+                    bg: "bg",
                     color: "text.muted",
                   })}
                 >
@@ -103,37 +144,14 @@ export function MessageBubble({ message }: Props) {
           </Flex>
         )}
 
-        <Box
-          px="4"
-          py="3"
-          fontSize="sm"
-          lineHeight="relaxed"
-          borderRadius="xl"
-          borderBottomRightRadius={isUser ? "sm" : "xl"}
-          borderBottomLeftRadius={isUser ? "xl" : "sm"}
-          bg={isUser ? "brand" : "bg.subtle"}
-          color={isUser ? "white" : "text"}
-          borderWidth={isUser ? "0" : "1px"}
-          borderColor="border"
-        >
-          {isUser ? (
-            <Box whiteSpace="pre-wrap" wordBreak="break-word">
-              {message.content}
-            </Box>
-          ) : (
-            <Box className="ai-prose">
-              <ReactMarkdown>{message.content}</ReactMarkdown>
-            </Box>
-          )}
-        </Box>
+        <Text variant="body-1" weight="bold">
+          Template.net
+        </Text>
 
-        <Box fontSize="10px" px="1" color="text.faint">
-          {new Date(message.createdAt).toLocaleTimeString([], {
-            hour: "2-digit",
-            minute: "2-digit",
-          })}
+        <Box className="ai-prose" fontSize="sm" lineHeight="relaxed" color="text">
+          <ReactMarkdown>{message.content}</ReactMarkdown>
         </Box>
       </Flex>
-    </Row>
+    </AssistantBlock>
   );
 }

@@ -1,33 +1,13 @@
+import { Text } from "@/components/text";
 import { Box, Flex } from "@/vendors/styled-system/jsx";
-import { Icon } from "@iconify/react/dist/iconify.cjs";
 
 export default function TypingIndicator() {
   return (
-    <Flex gap="3" alignItems="flex-start" animation="fadeSlide">
-      <Flex
-        alignItems="center"
-        justifyContent="center"
-        w="8"
-        h="8"
-        borderRadius="full"
-        flexShrink={0}
-        bg="brand"
-        color="white"
-      >
-        <Icon icon="solar:stars-bold" width={14} />
-      </Flex>
-
-      <Flex
-        alignItems="center"
-        gap="1.5"
-        px="4"
-        py="3.5"
-        borderRadius="xl"
-        borderBottomLeftRadius="sm"
-        bg="bg.subtle"
-        borderWidth="1px"
-        borderColor="border"
-      >
+    <Flex direction="column" gap="3" animation="fadeSlide">
+      <Text variant="body-1" weight="bold">
+        Template.net
+      </Text>
+      <Flex alignItems="center" gap="1.5" py="1">
         {[0, 1, 2].map((i) => (
           <Box
             key={i}
