@@ -1,7 +1,6 @@
 "use client";
 
 import { fetchSessions } from "@/lib/api";
-import { loadPersisted, savePersisted } from "@/lib/storage";
 import type { Session } from "@/types";
 import {
   createContext,
@@ -30,30 +29,14 @@ export function SessionProvider({
   const [sessions, setSessions] = useState<Session[]>(initialSessions);
 
   useEffect(() => {
-    const cached = loadPersisted()?.sessionList;
-    if (cached?.length) {
-      setSessions(cached);
-    } else if (initialSessions.length) {
-      const cur = loadPersisted();
-      savePersisted({
-        chatState: cur?.chatState ?? { messages: {} },
-        sessionList: initialSessions,
-      });
-    }
+    setSessions(initialSessions);
   }, [initialSessions]);
 
   const refreshSessions = useCallback(async () => {
     try {
       const fresh = await fetchSessions();
       setSessions(fresh);
-      const cur = loadPersisted();
-      savePersisted({
-        chatState: cur?.chatState ?? { messages: {} },
-        sessionList: fresh,
-      });
-    } catch {
-      /* silent */
-    }
+    } catch {}
   }, []);
 
   useEffect(() => {
@@ -63,9 +46,7 @@ export function SessionProvider({
   }, [refreshSessions]);
 
   return (
-    <SessionContext.Provider
-      value={{ sessions, setSessions, refreshSessions }}
-    >
+    <SessionContext.Provider value={{ sessions, setSessions, refreshSessions }}>
       {children}
     </SessionContext.Provider>
   );

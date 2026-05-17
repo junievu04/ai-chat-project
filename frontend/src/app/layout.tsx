@@ -1,8 +1,9 @@
 import { ChatProvider } from "@/contexts/ChatContext";
-import type { Metadata } from "next";
 import { GeistMono } from "geist/font/mono";
 import { GeistSans } from "geist/font/sans";
+import type { Metadata } from "next";
 import { ThemeProvider } from "next-themes";
+import { QueryProvider } from "src/vendors/tanstack-query/provider";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -29,7 +30,9 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <ChatProvider>{children}</ChatProvider>
+          <QueryProvider>
+            <ChatProvider>{children}</ChatProvider>
+          </QueryProvider>
         </ThemeProvider>
       </body>
     </html>

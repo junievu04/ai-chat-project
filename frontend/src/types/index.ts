@@ -31,3 +31,13 @@ export interface ChatResponse {
 export interface ChatState {
   messages: Record<string, Message[]>;
 }
+
+export interface SessionMessagesPage {
+  session: Session;
+  messages: Message[];
+  next: string | null;
+}
+
+export interface SearchParams {
+  next?: string | null;
+}

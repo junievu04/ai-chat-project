@@ -152,7 +152,7 @@ export interface UtilityValues {
 	transitionProperty: "common" | "colors" | "size" | "position" | "background";
 	transition: "all" | "common" | "size" | "position" | "background" | "colors" | "opacity" | "shadow" | "transform";
 	animation: Tokens["animations"];
-	animationName: "ping" | "pulse" | "bounce" | "bounceDot" | "fadeSlide" | "spin" | "spinnerDash";
+	animationName: "ping" | "pulse" | "bounce" | "bounceDot" | "fadeSlide" | "spin" | "spinnerDash" | "typingBounce";
 	animationTimingFunction: Tokens["easings"];
 	animationDuration: Tokens["durations"];
 	animationDelay: Tokens["durations"];

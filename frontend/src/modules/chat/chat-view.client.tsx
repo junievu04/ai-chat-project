@@ -1,30 +1,44 @@
 "use client";
 
 import { Button } from "@/components/button";
+import { useChatScroll } from "@/hooks/use-chat-scroll";
+import { useMessagePagination } from "@/hooks/use-message-pagination";
 import { useSendMessage } from "@/hooks/useSendMessage";
-import { useSessionMessages } from "@/hooks/useSessionMessages";
 import { EmptyState } from "@/modules/chat/empty-state";
 import { InputBar } from "@/modules/chat/input-bar";
-import { MessageList } from "@/modules/chat/message-list";
-import type { Message } from "@/types";
+import { MessageBubble } from "@/modules/chat/message-bubble";
+import TypingIndicator from "@/modules/chat/typing-indicator";
 import { css } from "@/vendors/styled-system/css";
 import { Box, Flex } from "@/vendors/styled-system/jsx";
 import { Icon } from "@iconify/react";
 import { useRouter } from "next/navigation";
+import { useRef, useState } from "react";
 
 interface Props {
   sessionId: string | null;
-  initialMessages: Message[];
 }
 
-export default function ChatViewClient({ sessionId, initialMessages }: Props) {
+export default function ChatViewClient({ sessionId: routeSessionId }: Props) {
   const router = useRouter();
-  const messages = useSessionMessages(sessionId, initialMessages);
-  const { send, isLoading, currentSessionId } = useSendMessage(sessionId);
+  const elementScrollRef = useRef<HTMLDivElement | null>(null);
+  const [shouldLoadOlder, setShouldLoadOlder] = useState(false);
+  const { send, isTyping, sessionId } = useSendMessage(routeSessionId);
+  const { messages, showEmptyState, isLoadingMore } = useMessagePagination(
+    sessionId,
+    shouldLoadOlder,
+  );
+
+  useChatScroll(elementScrollRef, {
+    sessionId,
+    setShouldLoadOlder,
+    lastMessageId: messages.at(-1)?._id,
+    messageCount: messages.length,
+    isLoadingMore,
+  });
 
   return (
     <Flex direction="column" h="full" overflow="hidden" bg="bg">
-      {currentSessionId && (
+      {sessionId && (
         <Flex
           display={{ base: "flex", md: "none" }}
           alignItems="center"
@@ -46,10 +60,36 @@ export default function ChatViewClient({ sessionId, initialMessages }: Props) {
         </Flex>
       )}
 
-      {messages.length === 0 && !isLoading ? (
+      {showEmptyState ? (
         <EmptyState />
       ) : (
-        <MessageList messages={messages} isLoading={isLoading} />
+        <Flex
+          ref={elementScrollRef}
+          flex="1"
+          direction="column"
+          overflowY="auto"
+          px="4"
+          py="6"
+          gap="2"
+          className={css({ scrollbarWidth: "thin" })}
+        >
+          {isLoadingMore && (
+            <Flex
+              justifyContent="center"
+              py="2"
+              color="textMuted"
+              fontSize="xs"
+            >
+              Loading older messages…
+            </Flex>
+          )}
+
+          {messages.map((msg) => (
+            <MessageBubble key={msg._id} message={msg} />
+          ))}
+
+          {isTyping && <TypingIndicator />}
+        </Flex>
       )}
 
       <Box
@@ -61,7 +101,7 @@ export default function ChatViewClient({ sessionId, initialMessages }: Props) {
         borderColor="border"
         bg="bg"
       >
-        <InputBar onSend={send} isLoading={isLoading} />
+        <InputBar onSend={send} isTyping={isTyping} />
       </Box>
     </Flex>
   );

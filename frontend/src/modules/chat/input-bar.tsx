@@ -6,16 +6,11 @@ import type { Attachment } from "@/types";
 import { css } from "@/vendors/styled-system/css";
 import { Box, Flex, styled } from "@/vendors/styled-system/jsx";
 import { Icon } from "@iconify/react";
-import {
-  useCallback,
-  useRef,
-  useState,
-  type KeyboardEvent,
-} from "react";
+import { useCallback, useRef, useState, type KeyboardEvent } from "react";
 
 interface Props {
   onSend: (prompt: string, attachments: Attachment[]) => void;
-  isLoading: boolean;
+  isTyping: boolean;
 }
 
 const ACCEPTED =
@@ -69,7 +64,7 @@ const TextArea = styled("textarea", {
   },
 });
 
-export function InputBar({ onSend, isLoading }: Props) {
+export function InputBar({ onSend, isTyping }: Props) {
   const [text, setText] = useState("");
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [uploading, setUploading] = useState(false);
@@ -105,7 +100,7 @@ export function InputBar({ onSend, isLoading }: Props) {
     setAttachments((prev) => prev.filter((_, i) => i !== idx));
 
   const handleSubmit = () => {
-    if (!text.trim() || isLoading || uploading) return;
+    if (!text.trim() || isTyping || uploading) return;
     onSend(text.trim(), attachments);
     setText("");
     setAttachments([]);
@@ -119,7 +114,7 @@ export function InputBar({ onSend, isLoading }: Props) {
     }
   };
 
-  const canSend = text.trim().length > 0 && !isLoading && !uploading;
+  const canSend = text.trim().length > 0 && !isTyping && !uploading;
 
   return (
     <InputShell>
@@ -159,7 +154,11 @@ export function InputBar({ onSend, isLoading }: Props) {
                   })}
                 />
               ) : (
-                <Icon icon="solar:file-bold-duotone" width={16} color="#3B3BFF" />
+                <Icon
+                  icon="solar:file-bold-duotone"
+                  width={16}
+                  color="#3B3BFF"
+                />
               )}
               <Box truncate color="text.muted">
                 {att.name}
@@ -221,7 +220,7 @@ export function InputBar({ onSend, isLoading }: Props) {
           onKeyDown={handleKeyDown}
           placeholder="Ask template.net"
           rows={1}
-          disabled={isLoading}
+          disabled={isTyping}
         />
 
         <Button

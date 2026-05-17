@@ -2,7 +2,6 @@
 
 import { useChatContext, useMessages } from "@/contexts/ChatContext";
 import { DRAFT_SESSION_KEY } from "@/hooks/useSendMessage";
-import { getStoredMessages } from "@/lib/storage";
 import type { Message } from "@/types";
 import { useEffect } from "react";
 
@@ -15,17 +14,8 @@ export function useSessionMessages(
   const messages = useMessages(storageKey);
 
   useEffect(() => {
-    if (!sessionId) return;
-
-    const stored = getStoredMessages(sessionId);
-    if (stored?.length) {
-      dispatch({ type: "SET_MESSAGES", sessionId, messages: stored });
-      return;
-    }
-
-    if (initialMessages.length) {
-      dispatch({ type: "SET_MESSAGES", sessionId, messages: initialMessages });
-    }
+    if (!sessionId || !initialMessages.length) return;
+    dispatch({ type: "SET_MESSAGES", sessionId, messages: initialMessages });
   }, [sessionId, initialMessages, dispatch]);
 
   return messages;

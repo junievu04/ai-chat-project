@@ -3,9 +3,9 @@
 import { Button, buttonRecipe } from "@/components/button";
 import { Text } from "@/components/text";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
+import { useChatContext } from "@/contexts/ChatContext";
 import { useSessionContext } from "@/contexts/SessionContext";
 import { deleteSession } from "@/lib/api";
-import { removeStoredSession } from "@/lib/storage";
 import { css, cx } from "@/vendors/styled-system/css";
 import { Box, Flex, Stack, styled } from "@/vendors/styled-system/jsx";
 import { Icon } from "@iconify/react";
@@ -97,13 +97,14 @@ export function SidebarNav() {
   const router = useRouter();
   const pathname = usePathname();
   const { sessions, setSessions } = useSessionContext();
+  const { dispatch } = useChatContext();
   const [expanded, setExpanded] = useState(false);
 
   const handleDelete = async (id: string, e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
     setSessions((prev) => prev.filter((s) => s._id !== id));
-    removeStoredSession(id);
+    dispatch({ type: "CLEAR_SESSION", sessionId: id });
     await deleteSession(id).catch(console.error);
     if (pathname === `/chat/${id}`) router.push("/chat");
   };
@@ -160,7 +161,12 @@ export function SidebarNav() {
               </span>
             </Link>
           ) : (
-            <Button key={item.label} variant="ghost" size="sm" className={navItemClass}>
+            <Button
+              key={item.label}
+              variant="ghost"
+              size="sm"
+              className={navItemClass}
+            >
               <Icon icon={item.icon} width={20} />
               <span className={expandHidden} data-expand>
                 {item.label}
@@ -213,7 +219,6 @@ export function SidebarNav() {
               size="sm"
               onClick={(e) => handleDelete(s._id, e)}
               aria-label="Delete"
-              opacity={0}
               _groupHover={{ opacity: 1 }}
               color="text.faint"
               _hover={{ color: "danger" }}
@@ -242,7 +247,12 @@ export function SidebarNav() {
       <Box flexShrink={0} borderTopWidth="1px" borderColor="border">
         <Stack gap="0" py="1">
           {NAV_BOTTOM.map((item) => (
-            <Button key={item.label} variant="ghost" size="sm" className={navItemClass}>
+            <Button
+              key={item.label}
+              variant="ghost"
+              size="sm"
+              className={navItemClass}
+            >
               <Icon icon={item.icon} width={20} />
               <span className={expandHidden} data-expand>
                 {item.label}

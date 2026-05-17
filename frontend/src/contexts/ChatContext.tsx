@@ -2,11 +2,9 @@
 
 import { chatReducer, type ChatAction } from "@/store/chatReducer";
 import type { ChatState, Message } from "@/types";
-import { loadPersisted, savePersisted } from "@/lib/storage";
 import {
   createContext,
   useContext,
-  useEffect,
   useReducer,
   type ReactNode,
 } from "react";
@@ -19,18 +17,7 @@ interface ChatCtx {
 const ChatContext = createContext<ChatCtx | null>(null);
 
 export function ChatProvider({ children }: { children: ReactNode }) {
-  const persisted = loadPersisted();
-  const [state, dispatch] = useReducer(chatReducer, {
-    messages: persisted?.chatState.messages ?? {},
-  });
-
-  useEffect(() => {
-    const cur = loadPersisted();
-    savePersisted({
-      chatState: state,
-      sessionList: cur?.sessionList ?? [],
-    });
-  }, [state]);
+  const [state, dispatch] = useReducer(chatReducer, { messages: {} });
 
   return (
     <ChatContext.Provider value={{ state, dispatch }}>

@@ -1,4 +1,9 @@
-import type { Attachment, ChatResponse, Message, Session } from "@/types";
+import type {
+  Attachment,
+  ChatResponse,
+  Session,
+  SessionMessagesPage,
+} from "@/types";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
 
@@ -17,10 +22,20 @@ async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
 export const fetchSessions = (): Promise<Session[]> =>
   apiFetch<Session[]>("/api/sessions");
 
+export const fetchSession = (sessionId: string): Promise<Session> =>
+  apiFetch<Session>(`/api/sessions/${sessionId}`);
+
 export const fetchSessionMessages = (
   sessionId: string,
-): Promise<{ session: Session; messages: Message[] }> =>
-  apiFetch(`/api/sessions/${sessionId}/messages`);
+  next?: string,
+): Promise<SessionMessagesPage> => {
+  const params = new URLSearchParams();
+  if (next) params.set("next", next);
+  const qs = params.toString();
+  return apiFetch(
+    `/api/sessions/${sessionId}/messages${qs ? `?${qs}` : ""}`,
+  );
+};
 
 export const createSession = (): Promise<Session> =>
   apiFetch<Session>("/api/sessions", {

@@ -8,17 +8,22 @@ import { useCallback, useEffect, useState } from "react";
 
 export const DRAFT_SESSION_KEY = "__draft__";
 
-export function useSendMessage(sessionId: string | null) {
+export function useSendMessage(routeSessionId: string | null) {
   const router = useRouter();
   const { dispatch } = useChatContext();
   const [isLoading, setIsLoading] = useState(false);
-  const [currentSessionId, setCurrentSessionId] = useState(sessionId);
+  const [sessionId, setSessionId] = useState(routeSessionId);
 
   useEffect(() => {
-    setCurrentSessionId(sessionId);
-  }, [sessionId]);
+    setSessionId(routeSessionId);
+  }, [routeSessionId]);
 
-  const storageKey = currentSessionId ?? DRAFT_SESSION_KEY;
+  useEffect(() => {
+    if (!routeSessionId) return;
+    dispatch({ type: "CLEAR_SESSION", sessionId: DRAFT_SESSION_KEY });
+  }, [routeSessionId, dispatch]);
+
+  const storageKey = sessionId ?? DRAFT_SESSION_KEY;
 
   const send = useCallback(
     async (prompt: string, attachments: Attachment[]) => {
@@ -27,7 +32,7 @@ export function useSendMessage(sessionId: string | null) {
       const tempId = `temp-${Date.now()}`;
       const tempUserMsg: Message = {
         _id: tempId,
-        sessionId: currentSessionId || "",
+        sessionId: sessionId || "",
         role: "user",
         content: prompt,
         attachments,
@@ -43,29 +48,23 @@ export function useSendMessage(sessionId: string | null) {
       setIsLoading(true);
 
       try {
-        const data = await sendChatMessage(
-          prompt,
-          currentSessionId,
-          attachments,
-        );
-
+        const data = await sendChatMessage(prompt, sessionId, attachments);
         const targetId = data.sessionId;
 
-        if (currentSessionId) {
+        if (sessionId) {
           dispatch({
             type: "REPLACE_OPTIMISTIC",
-            sessionId: currentSessionId,
+            sessionId,
             tempId,
             messages: [data.userMessage, data.aiMessage],
           });
         } else {
-          dispatch({ type: "CLEAR_SESSION", sessionId: DRAFT_SESSION_KEY });
+          setSessionId(targetId);
           dispatch({
             type: "SET_MESSAGES",
             sessionId: targetId,
             messages: [data.userMessage, data.aiMessage],
           });
-          setCurrentSessionId(targetId);
           window.dispatchEvent(new Event("session:created"));
           router.replace(`/chat/${targetId}`);
         }
@@ -80,8 +79,8 @@ export function useSendMessage(sessionId: string | null) {
         setIsLoading(false);
       }
     },
-    [currentSessionId, dispatch, isLoading, router, storageKey],
+    [sessionId, dispatch, isLoading, router, storageKey],
   );
 
-  return { send, isLoading, currentSessionId };
+  return { send, isTyping: isLoading, sessionId };
 }

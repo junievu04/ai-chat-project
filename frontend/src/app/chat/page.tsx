@@ -4,5 +4,5 @@ import type { Metadata } from "next";
 export const metadata: Metadata = { title: "New Chat" };
 
 export default function NewChatPage() {
-  return <ChatViewClient sessionId={null} initialMessages={[]} />;
+  return <ChatViewClient sessionId={null} />;
 }

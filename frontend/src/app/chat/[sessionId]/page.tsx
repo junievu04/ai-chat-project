@@ -1,4 +1,4 @@
-import { fetchSessionMessages } from "@/lib/api";
+import { fetchSession } from "@/lib/api";
 import withErrorBoundary from "@/lib/withErrorBoundary";
 import ChatViewClient from "@/modules/chat/chat-view.client";
 import type { Metadata } from "next";
@@ -12,21 +12,16 @@ interface Props {
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { sessionId } = await params;
-  const data = await fetchSessionMessages(sessionId).catch(() => null);
-  return { title: data?.session?.title || "Chat" };
+  const session = await fetchSession(sessionId).catch(() => null);
+  return { title: session?.title || "Chat" };
 }
 
 const SessionPage = async ({ params }: Props) => {
   const { sessionId } = await params;
-  const data = await fetchSessionMessages(sessionId).catch(() => null);
-  if (!data) notFound();
+  const session = await fetchSession(sessionId).catch(() => null);
+  if (!session) notFound();
 
-  return (
-    <ChatViewClient
-      sessionId={sessionId}
-      initialMessages={data.messages}
-    />
-  );
+  return <ChatViewClient sessionId={sessionId} />;
 };
 
 export default withErrorBoundary(SessionPage);
