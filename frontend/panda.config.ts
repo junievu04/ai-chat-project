@@ -94,6 +94,10 @@ export default defineConfig({
             muted: { value: { base: "#888888", _dark: "#888888" } },
             faint: { value: { base: "#bbbbbb", _dark: "#444444" } },
           },
+          userBubble: {
+            bg: { value: { base: "#e8ecf4", _dark: "#3b3bff" } },
+            fg: { value: { base: "#111111", _dark: "#ffffff" } },
+          },
         },
       },
       keyframes: {

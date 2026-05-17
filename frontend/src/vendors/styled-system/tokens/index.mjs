@@ -1799,6 +1799,14 @@ const tokens = {
     "value": "var(--colors-text-faint)",
     "variable": "var(--colors-text-faint)"
   },
+  "colors.userBubble.bg": {
+    "value": "var(--colors-user-bubble-bg)",
+    "variable": "var(--colors-user-bubble-bg)"
+  },
+  "colors.userBubble.fg": {
+    "value": "var(--colors-user-bubble-fg)",
+    "variable": "var(--colors-user-bubble-fg)"
+  },
   "spacing.-1": {
     "value": "calc(var(--spacing-1) * -1)",
     "variable": "var(--spacing-1)"
@@ -2006,6 +2014,14 @@ const tokens = {
   "colors.colorPalette.faint": {
     "value": "var(--colors-color-palette-faint)",
     "variable": "var(--colors-color-palette-faint)"
+  },
+  "colors.colorPalette.bg": {
+    "value": "var(--colors-color-palette-bg)",
+    "variable": "var(--colors-color-palette-bg)"
+  },
+  "colors.colorPalette.fg": {
+    "value": "var(--colors-color-palette-fg)",
+    "variable": "var(--colors-color-palette-fg)"
   }
 }
 

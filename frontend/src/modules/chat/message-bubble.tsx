@@ -83,8 +83,8 @@ export function MessageBubble({ message }: Props) {
             fontSize="sm"
             lineHeight="relaxed"
             borderRadius="2xl"
-            bg="#e8ecf4"
-            color="text"
+            bg="userBubble.bg"
+            color="userBubble.fg"
             maxW="fit-content"
           >
             <Box whiteSpace="pre-wrap" wordBreak="break-word">
