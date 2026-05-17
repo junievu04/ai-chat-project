@@ -55,7 +55,8 @@ export default defineConfig({
               'var(--font-geist-sans, "Inter"), -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
           },
           mono: {
-            value: 'var(--font-geist-mono, "Geist Mono"), "Fira Code", monospace',
+            value:
+              'var(--font-geist-mono, "Geist Mono"), "Fira Code", monospace',
           },
         },
         radii: {
@@ -111,6 +112,10 @@ export default defineConfig({
           "0%": { strokeDasharray: "1px, 200px", strokeDashoffset: 0 },
           "50%": { strokeDasharray: "100px, 200px", strokeDashoffset: -15 },
           "100%": { strokeDasharray: "100px, 200px", strokeDashoffset: -125 },
+        },
+        typingBounce: {
+          "0%, 60%, 100%": { transform: " translateY(0)" },
+          "30%": { transform: "translateY(-5px)" },
         },
       },
     },
