@@ -272,12 +272,30 @@ export function SidebarNav() {
   const { sessions, setSessions } = useSessionContext();
   const { dispatch } = useChatContext();
   const [expanded, setExpanded] = useState(true);
+  const [mobileOpen, setMobileOpen] = useState(false);
   const [pendingDelete, setPendingDelete] = useState<Session | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
     const stored = localStorage.getItem(SIDEBAR_COLLAPSED_KEY);
     if (stored !== null) setExpanded(stored !== "true");
+  }, []);
+
+  useEffect(() => {
+    setMobileOpen(false);
+  }, [pathname]);
+
+  useEffect(() => {
+    document.body.style.overflow = mobileOpen ? "hidden" : "";
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [mobileOpen]);
+
+  useEffect(() => {
+    const open = () => setMobileOpen(true);
+    window.addEventListener("sidebar:open", open);
+    return () => window.removeEventListener("sidebar:open", open);
   }, []);
 
   const toggleSidebar = () => {
@@ -312,183 +330,236 @@ export function SidebarNav() {
 
   const deleteTitle = pendingDelete?.title || "Untitled chat";
 
-  return (
-    <>
-      <Box
-        as="aside"
-        display="flex"
-        flexDirection="column"
-        h="full"
+  const sidebarContent = (isMobile: boolean) => (
+    <Box
+      as="aside"
+      display="flex"
+      flexDirection="column"
+      h="full"
+      overflow="hidden"
+      bg="bg.subtle"
+      p="2"
+      w={isMobile ? "280px" : expanded ? "248px" : "84px"}
+      transition="width 0.2s ease"
+      borderRightWidth={isMobile ? "0" : "1px"}
+      borderColor="border"
+      flexShrink={0}
+    >
+      <Center
+        justifyContent={expanded || isMobile ? "space-between" : "center"}
+        px={expanded || isMobile ? "2.5" : "2"}
+        py="2"
         flexShrink={0}
-        overflow="hidden"
-        borderRightWidth="1px"
-        borderColor="border"
-        bg="bg.subtle"
-        w={expanded ? "248px" : "84px"}
-        transition="width 0.2s ease"
-        p="2"
       >
-        <Flex
-          alignItems="center"
-          justifyContent={expanded ? "space-between" : "center"}
-          px={expanded ? "2.5" : "2"}
-          py="2"
-          flexShrink={0}
-          gap="2"
+        <Link
+          href="/chat"
+          title="Template.net"
+          className={css({
+            display: isMobile || expanded ? "flex" : "none",
+            alignItems: "center",
+            justifyContent: "center",
+            flexShrink: 0,
+            w: "8",
+            h: "8",
+            borderRadius: "md",
+            bg: "brand",
+            color: "white",
+            fontSize: "md",
+            fontWeight: "bold",
+            lineHeight: "1",
+            fontFamily: "sans",
+            transition: "transform 0.15s ease",
+            _hover: { transform: "scale(1.04)" },
+          })}
         >
-          <Link
-            href="/chat"
-            title="Template.net"
-            className={css({
-              display: expanded ? "flex" : "none",
-              alignItems: "center",
-              justifyContent: "center",
-              flexShrink: 0,
-              w: "8",
-              h: "8",
-              borderRadius: "md",
-              bg: "brand",
-              color: "white",
-              fontSize: "md",
-              fontWeight: "bold",
-              lineHeight: "1",
-              fontFamily: "sans",
-              transition: "transform 0.15s ease",
-              _hover: { transform: "scale(1.04)" },
-            })}
-          >
-            T
-          </Link>
-          {expanded && <Box flex="1" />}
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={toggleSidebar}
-            aria-label={expanded ? "Collapse sidebar" : "Expand sidebar"}
-            aria-expanded={expanded}
-            flexShrink={0}
-            minW="9"
-            minH="9"
-            w="9"
-            h="9"
-            p="0"
-            borderRadius="lg"
-            title={expanded ? "Collapse" : "Expand"}
-          >
-            <Icon
-              icon={
-                expanded
+          T
+        </Link>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={isMobile ? () => setMobileOpen(false) : toggleSidebar}
+          aria-label={
+            isMobile
+              ? "Close sidebar"
+              : expanded
+                ? "Collapse sidebar"
+                : "Expand sidebar"
+          }
+          flexShrink={0}
+          minW="9"
+          minH="9"
+          w="9"
+          h="9"
+          p="0"
+          borderRadius="lg"
+        >
+          <Icon
+            icon={
+              isMobile
+                ? "solar:close-circle-linear"
+                : expanded
                   ? "solar:sidebar-minimalistic-linear"
                   : "solar:sidebar-minimalistic-bold-duotone"
-              }
-              width={20}
-              height={20}
-            />
-          </Button>
-        </Flex>
-
-        <Stack
-          flex="1"
-          minH="0"
-          overflowY="auto"
-          gap="0"
-          className={css({ scrollbarWidth: "thin" })}
-        >
-          <Stack gap="0" py="1" flexShrink={0}>
-            {NAV_TOP.map((item) => (
-              <NavItem
-                key={item.label}
-                icon={item.icon}
-                label={item.label}
-                href={item.href}
-                active={!!item.href && item.href === "/chat" && isChatRoute}
-                expanded={expanded}
-              />
-            ))}
-          </Stack>
-
-          <Box
-            mx={expanded ? "4" : "3"}
-            my="2"
-            h="1px"
-            bg="border"
-            flexShrink={0}
+            }
+            width={20}
+            height={20}
           />
+        </Button>
+      </Center>
 
-          <Box flexShrink={0} px={expanded ? "3" : "1"} pb="2">
-            {expanded ? (
-              <Flex alignItems="center" justifyContent="space-between" mb="2">
-                <Text variant="body-2" tone="secondary" weight="semibold">
-                  Chat history
-                </Text>
-                <Link
-                  href="/chat"
-                  className={css({
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    w: "7",
-                    h: "7",
-                    borderRadius: "md",
-                    color: "brand",
-                    _hover: { bg: "brand-muted" },
-                  })}
-                  title="New chat"
-                >
-                  <Icon icon="solar:add-square-bold" width={22} height={22} />
-                </Link>
-              </Flex>
-            ) : (
-              <Flex justifyContent="center" mb="2">
-                <Link
-                  href="/chat"
-                  className={css({
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    w: "8",
-                    h: "8",
-                    borderRadius: "lg",
-                    color: "brand",
-                    _hover: { bg: "brand-muted" },
-                  })}
-                  title="New chat"
-                >
-                  <Icon icon="solar:add-square-bold" width={18} height={18} />
-                </Link>
-              </Flex>
-            )}
-
-            <Stack gap="0.5" display={expanded ? "flex" : "none"}>
-              {sessions.length === 0
-                ? expanded && (
-                    <Text variant="body-2" tone="secondary" py="1">
-                      No chats yet
-                    </Text>
-                  )
-                : sessions.map((s) => (
-                    <SessionHistoryItem
-                      key={s._id}
-                      session={s}
-                      isActive={activeId === s._id}
-                      expanded={expanded}
-                      onDeleteClick={setPendingDelete}
-                    />
-                  ))}
-            </Stack>
-          </Box>
+      <Stack
+        flex="1"
+        minH="0"
+        overflowY="auto"
+        gap="0"
+        className={css({ scrollbarWidth: "thin" })}
+      >
+        <Stack gap="0" py="1" flexShrink={0}>
+          {NAV_TOP.map((item) => (
+            <NavItem
+              key={item.label}
+              icon={item.icon}
+              label={item.label}
+              href={item.href}
+              active={!!item.href && item.href === "/chat" && isChatRoute}
+              expanded={expanded || isMobile}
+            />
+          ))}
         </Stack>
 
-        <Center
+        <Box
+          mx={expanded || isMobile ? "4" : "3"}
+          my="2"
+          h="1px"
+          bg="border"
           flexShrink={0}
-          borderTopWidth="1px"
-          borderColor="border"
-          px={expanded ? "2" : "1"}
-          py="2"
-        >
-          <ThemeToggle compact={!expanded} />
-        </Center>
-      </Box>
+        />
+
+        <Box flexShrink={0} px={expanded || isMobile ? "3" : "1"} pb="2">
+          {expanded || isMobile ? (
+            <Flex alignItems="center" justifyContent="space-between" mb="2">
+              <Text variant="body-2" tone="secondary" weight="semibold">
+                Chat history
+              </Text>
+              <Link
+                href="/chat"
+                className={css({
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  w: "7",
+                  h: "7",
+                  borderRadius: "md",
+                  color: "brand",
+                  _hover: { bg: "brand-muted" },
+                })}
+                title="New chat"
+              >
+                <Icon icon="solar:add-square-bold" width={22} height={22} />
+              </Link>
+            </Flex>
+          ) : (
+            <Flex justifyContent="center" mb="2">
+              <Link
+                href="/chat"
+                className={css({
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  w: "8",
+                  h: "8",
+                  borderRadius: "lg",
+                  color: "brand",
+                  _hover: { bg: "brand-muted" },
+                })}
+                title="New chat"
+              >
+                <Icon icon="solar:add-square-bold" width={18} height={18} />
+              </Link>
+            </Flex>
+          )}
+
+          <Stack gap="0.5" display={expanded || isMobile ? "flex" : "none"}>
+            {sessions.length === 0 ? (
+              <Text variant="body-2" tone="secondary" py="1">
+                No chats yet
+              </Text>
+            ) : (
+              sessions.map((s) => (
+                <SessionHistoryItem
+                  key={s._id}
+                  session={s}
+                  isActive={activeId === s._id}
+                  expanded={expanded || isMobile}
+                  onDeleteClick={setPendingDelete}
+                />
+              ))
+            )}
+          </Stack>
+        </Box>
+      </Stack>
+
+      <Center
+        flexShrink={0}
+        borderTopWidth="1px"
+        borderColor="border"
+        px={expanded || isMobile ? "2" : "1"}
+        py="2"
+      >
+        <ThemeToggle compact={!expanded && !isMobile} />
+      </Center>
+    </Box>
+  );
+
+  return (
+    <>
+      <Box display={{ base: "none", md: "flex" }}>{sidebarContent(false)}</Box>
+
+      <Button
+        display={{ base: "flex", md: "none" }}
+        position="fixed"
+        top="3"
+        left="3"
+        zIndex="1200"
+        variant="ghost"
+        size="sm"
+        onClick={() => setMobileOpen(true)}
+        minW="9"
+        minH="9"
+        w="9"
+        h="9"
+        borderRadius="lg"
+        bg="bg"
+        borderWidth="1px"
+        borderColor="border"
+        boxShadow="sm"
+        aria-label="Open sidebar"
+      >
+        <Icon icon="solar:hamburger-menu-linear" width={20} />
+      </Button>
+      {mobileOpen && (
+        <>
+          <Box
+            display={{ base: "block", md: "none" }}
+            position="fixed"
+            inset="0"
+            zIndex="1100"
+            bg="blackAlpha.500"
+            onClick={() => setMobileOpen(false)}
+          />
+          <Box
+            display={{ base: "flex", md: "none" }}
+            position="fixed"
+            top="0"
+            left="0"
+            h="100dvh"
+            zIndex="1200"
+            boxShadow="xl"
+          >
+            {sidebarContent(true)}
+          </Box>
+        </>
+      )}
 
       <ConfirmDialog
         open={!!pendingDelete}

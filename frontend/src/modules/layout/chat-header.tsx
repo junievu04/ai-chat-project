@@ -17,9 +17,27 @@ export function ChatHeader() {
       borderColor="border"
       bg="bg"
     >
-      <Text weight="bold" tone="brand" variant="body-1">
-        <strong>TEMPLATE</strong>.NET
-      </Text>
+      <Flex alignItems="center" gap="2">
+        <Button
+          display={{ base: "flex", md: "none" }}
+          variant="ghost"
+          size="sm"
+          onClick={() => window.dispatchEvent(new CustomEvent("sidebar:open"))}
+          minW="9"
+          minH="9"
+          w="9"
+          h="9"
+          p="0"
+          borderRadius="lg"
+          aria-label="Open sidebar"
+        >
+          <Icon icon="solar:hamburger-menu-linear" width={20} />
+        </Button>
+
+        <Text weight="bold" tone="brand" variant="body-1">
+          <strong>TEMPLATE</strong>.NET
+        </Text>
+      </Flex>
 
       <Flex alignItems="center" gap="2">
         <Button
