@@ -1,9 +1,15 @@
-import { Injectable, NotFoundException } from "@nestjs/common";
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from "@nestjs/common";
 import { InjectModel } from "@nestjs/mongoose";
-import { Model } from "mongoose";
+import { Model, Types } from "mongoose";
 import { Message, MessageDocument } from "../chat/message.schema";
 import { CreateSessionDto } from "./dto/create-session.dto";
 import { Session, SessionDocument } from "./session.schema";
+
+const MESSAGE_PAGE_SIZE = 20;
 
 @Injectable()
 export class SessionService {
@@ -20,16 +26,48 @@ export class SessionService {
     return this.sessionModel.create({ title: dto.title || "New Chat" });
   }
 
-  async findMessages(sessionId: string) {
+  async findOne(sessionId: string) {
+    const session = await this.sessionModel.findById(sessionId).lean();
+    if (!session) throw new NotFoundException("Session not found");
+    return session;
+  }
+
+  async findMessages(
+    sessionId: string,
+    next?: string,
+    limit = MESSAGE_PAGE_SIZE,
+  ) {
     const session = await this.sessionModel.findById(sessionId).lean();
     if (!session) throw new NotFoundException("Session not found");
 
-    const messages = await this.messageModel
-      .find({ sessionId })
-      .sort({ createdAt: 1 })
+    const filter: Record<string, unknown> = {
+      sessionId: new Types.ObjectId(sessionId),
+    };
+
+    if (next) {
+      if (!Types.ObjectId.isValid(next)) {
+        throw new BadRequestException("Invalid next");
+      }
+      const anchor = await this.messageModel.findById(next).lean();
+      if (!anchor?.createdAt) throw new BadRequestException("Invalid next");
+      filter.createdAt = { $lt: anchor.createdAt };
+    }
+
+    const batch = await this.messageModel
+      .find(filter)
+      .sort({ createdAt: -1 })
+      .limit(limit + 1)
       .lean();
 
-    return { session, messages };
+    let nextResponse: string | null = null;
+    if (batch.length > limit) {
+      batch.pop();
+      next = String(batch[batch.length - 1]._id);
+    }
+
+    const messages = batch.reverse();
+
+    return { session, messages, next: nextResponse };
   }
 
   async remove(sessionId: string): Promise<{ success: boolean }> {

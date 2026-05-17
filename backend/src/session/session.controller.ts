@@ -7,6 +7,7 @@ import {
   HttpStatus,
   Param,
   Post,
+  Query,
 } from "@nestjs/common";
 import { CreateSessionDto } from "./dto/create-session.dto";
 import { SessionService } from "./session.service";
@@ -15,26 +16,32 @@ import { SessionService } from "./session.service";
 export class SessionController {
   constructor(private readonly sessionService: SessionService) {}
 
-  // GET /api/sessions
   @Get()
   findAll() {
     return this.sessionService.findAll();
   }
 
-  // POST /api/sessions
   @Post()
   @HttpCode(HttpStatus.CREATED)
   create(@Body() dto: CreateSessionDto) {
     return this.sessionService.create(dto);
   }
 
-  // GET /api/sessions/:id/messages
   @Get(":id/messages")
-  findMessages(@Param("id") id: string) {
-    return this.sessionService.findMessages(id);
+  findMessages(
+    @Param("id") id: string,
+    @Query("next") next?: string,
+    @Query("limit") limit?: string,
+  ) {
+    const parsedLimit = limit ? parseInt(limit, 10) : undefined;
+    return this.sessionService.findMessages(id, next, parsedLimit);
   }
 
-  // DELETE /api/sessions/:id
+  @Get(":id")
+  findOne(@Param("id") id: string) {
+    return this.sessionService.findOne(id);
+  }
+
   @Delete(":id")
   remove(@Param("id") id: string) {
     return this.sessionService.remove(id);

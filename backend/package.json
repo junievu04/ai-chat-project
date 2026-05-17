@@ -3,10 +3,10 @@
   "version": "1.0.0",
   "description": "AI Chat Backend - NestJS",
   "scripts": {
-    "build": "nest build",
+    "clean": "node -e \"require('fs').rmSync('dist',{recursive:true,force:true})\"",
+    "build": "npm run clean && nest build",
     "start": "node dist/main.js",
-    "dev": "nest start --watch",
-    "start:debug": "nest start --debug --watch",
+    "dev": "node --require @swc-node/register src/main.ts",
     "lint": "eslint \"{src,apps,libs,test}/**/*.ts\""
   },
   "dependencies": {
@@ -27,6 +27,8 @@
   "devDependencies": {
     "@nestjs/cli": "^10.4.9",
     "@nestjs/schematics": "^10.2.3",
+    "@swc-node/register": "^1.11.1",
+    "@swc/core": "^1.15.33",
     "@types/multer": "^1.4.12",
     "@types/node": "^22.13.1",
     "typescript": "^5.7.3"

@@ -1,28 +1,28 @@
-import { Module } from '@nestjs/common';
-import { ConfigModule, ConfigService } from '@nestjs/config';
-import { MongooseModule } from '@nestjs/mongoose';
-import { SessionModule } from './session/session.module';
-import { ChatModule } from './chat/chat.module';
-import { UploadModule } from './upload/upload.module';
+import { MiddlewareConsumer, Module, NestModule } from "@nestjs/common";
+import { ConfigModule, ConfigService } from "@nestjs/config";
+import { MongooseModule } from "@nestjs/mongoose";
+import { ChatModule } from "./chat/chat.module";
+import { LoggerMiddleware } from "./common/middleware/logger.middleware";
+import { SessionModule } from "./session/session.module";
+import { UploadModule } from "./upload/upload.module";
 
 @Module({
   imports: [
-    // ── Global config (.env) ───────────────────────────────
     ConfigModule.forRoot({ isGlobal: true }),
-
-    // ── MongoDB via Mongoose ───────────────────────────────
     MongooseModule.forRootAsync({
       imports: [ConfigModule],
       useFactory: (config: ConfigService) => ({
-        uri: config.getOrThrow<string>('MONGODB_URI'),
+        uri: config.getOrThrow<string>("MONGODB_URI"),
       }),
       inject: [ConfigService],
     }),
-
-    // ── Feature modules ────────────────────────────────────
     SessionModule,
     ChatModule,
     UploadModule,
   ],
 })
-export class AppModule {}
+export class AppModule implements NestModule {
+  configure(consumer: MiddlewareConsumer) {
+    consumer.apply(LoggerMiddleware).forRoutes("*");
+  }
+}
