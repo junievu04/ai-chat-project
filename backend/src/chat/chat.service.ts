@@ -1,10 +1,18 @@
-import { Injectable, BadRequestException } from '@nestjs/common';
-import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
-import { Message, MessageDocument } from './message.schema';
-import { Session, SessionDocument } from '../session/session.schema';
-import { AiService } from './ai.service';
-import { SendMessageDto } from './dto/send-message.dto';
+import { BadRequestException, Injectable } from "@nestjs/common";
+import { InjectModel } from "@nestjs/mongoose";
+import { Model, Types } from "mongoose";
+import { Session, SessionDocument } from "../session/session.schema";
+import { toAiErrorMessage } from "./ai-error.util";
+import { AiService } from "./ai.service";
+import { SendMessageDto } from "./dto/send-message.dto";
+import { Message, MessageDocument } from "./message.schema";
+
+export type ChatStreamEventType = "meta" | "chunk" | "done" | "error";
+
+export interface ChatStreamEvent {
+  type: ChatStreamEventType;
+  data: Record<string, unknown>;
+}
 
 @Injectable()
 export class ChatService {
@@ -14,14 +22,13 @@ export class ChatService {
     private aiService: AiService,
   ) {}
 
-  async sendMessage(dto: SendMessageDto) {
+  async *sendMessageStream(dto: SendMessageDto): AsyncGenerator<ChatStreamEvent> {
     const { prompt, sessionId, attachments = [] } = dto;
 
     if (!prompt?.trim()) {
-      throw new BadRequestException('Prompt is required');
+      throw new BadRequestException("Prompt is required");
     }
 
-    // ── 1. Get or create session ──────────────────────────
     let session: SessionDocument;
 
     if (sessionId) {
@@ -30,19 +37,27 @@ export class ChatService {
 
     if (!session) {
       session = await this.sessionModel.create({
-        title: prompt.slice(0, 60) + (prompt.length > 60 ? '…' : ''),
+        title: prompt.slice(0, 60) + (prompt.length > 60 ? "…" : ""),
       });
     }
 
-    // ── 2. Save user message ──────────────────────────────
     const userMsg = await this.messageModel.create({
       sessionId: session._id,
-      role: 'user',
+      role: "user",
       content: prompt,
       attachments,
     });
 
-    // ── 3. Fetch conversation history for context ─────────
+    const sid = String(session._id);
+
+    yield {
+      type: "meta",
+      data: {
+        sessionId: sid,
+        userMessage: this.toMessagePayload(userMsg, sid),
+      },
+    };
+
     const history = await this.messageModel
       .find({ sessionId: session._id })
       .sort({ createdAt: 1 })
@@ -51,41 +66,58 @@ export class ChatService {
 
     const contextMessages = history
       .filter((m) => m._id.toString() !== userMsg._id.toString())
-      .map((m) => ({ role: m.role as 'user' | 'assistant', content: m.content }));
+      .map((m) => ({
+        role: m.role as "user" | "assistant",
+        content: m.content,
+      }));
 
-    // ── 4. Generate AI response ───────────────────────────
-    const aiText = await this.aiService.generateResponse(contextMessages, prompt);
+    let fullText = "";
 
-    // ── 5. Save AI message ────────────────────────────────
+    try {
+      for await (const chunk of this.aiService.generateResponseStream(
+        contextMessages,
+        prompt,
+      )) {
+        fullText += chunk;
+        yield { type: "chunk", data: { text: chunk } };
+      }
+    } catch (err) {
+      yield { type: "error", data: { message: toAiErrorMessage(err) } };
+      return;
+    }
+
     const aiMsg = await this.messageModel.create({
       sessionId: session._id,
-      role: 'assistant',
-      content: aiText,
+      role: "assistant",
+      content: fullText,
       attachments: [],
     });
 
-    // ── 6. Update session message count ───────────────────
     await this.sessionModel.findByIdAndUpdate(session._id, {
       $inc: { messageCount: 2 },
       updatedAt: new Date(),
     });
 
+    yield {
+      type: "done",
+      data: {
+        aiMessage: this.toMessagePayload(aiMsg, sid),
+      },
+    };
+  }
+
+  private toMessagePayload(
+    msg: MessageDocument | { _id: Types.ObjectId; role: string; content: string; attachments?: unknown[]; createdAt?: Date },
+    sessionId: string,
+  ) {
     return {
-      sessionId: session._id,
-      userMessage: {
-        _id: userMsg._id,
-        role: 'user',
-        content: prompt,
-        attachments,
-        createdAt: userMsg['createdAt'],
-      },
-      aiMessage: {
-        _id: aiMsg._id,
-        role: 'assistant',
-        content: aiText,
-        attachments: [],
-        createdAt: aiMsg['createdAt'],
-      },
+      _id: String(msg._id),
+      sessionId,
+      role: msg.role,
+      content: msg.content,
+      attachments: msg.attachments ?? [],
+      createdAt: (msg as MessageDocument).createdAt?.toISOString?.() ??
+        new Date().toISOString(),
     };
   }
 }

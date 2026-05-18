@@ -7,6 +7,8 @@
     "build": "npm run clean && nest build",
     "start": "node dist/main.js",
     "dev": "node --require @swc-node/register src/main.ts",
+    "seed:demo": "node --require @swc-node/register scripts/seed-demo.ts",
+    "seed:demo:reset": "node --require @swc-node/register scripts/seed-demo.ts --reset",
     "lint": "eslint \"{src,apps,libs,test}/**/*.ts\""
   },
   "dependencies": {

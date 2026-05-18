@@ -1,15 +1,54 @@
-import { Body, Controller, HttpCode, HttpStatus, Post } from "@nestjs/common";
+import {
+  Body,
+  Controller,
+  HttpException,
+  Post,
+  Res,
+} from "@nestjs/common";
+import { Response } from "express";
 import { ChatService } from "./chat.service";
+import { toAiErrorMessage } from "./ai-error.util";
 import { SendMessageDto } from "./dto/send-message.dto";
 
 @Controller("chat")
 export class ChatController {
   constructor(private readonly chatService: ChatService) {}
 
-  // POST /api/chat
   @Post()
-  @HttpCode(HttpStatus.OK)
-  sendMessage(@Body() dto: SendMessageDto) {
-    return this.chatService.sendMessage(dto);
+  async sendMessage(@Body() dto: SendMessageDto, @Res() res: Response) {
+    res.setHeader("Content-Type", "text/event-stream; charset=utf-8");
+    res.setHeader("Cache-Control", "no-cache, no-transform");
+    res.setHeader("Connection", "keep-alive");
+    res.setHeader("X-Accel-Buffering", "no");
+    res.flushHeaders();
+
+    const writeEvent = (type: string, data: Record<string, unknown>) => {
+      res.write(`event: ${type}\ndata: ${JSON.stringify(data)}\n\n`);
+    };
+
+    try {
+      for await (const event of this.chatService.sendMessageStream(dto)) {
+        writeEvent(event.type, event.data);
+      }
+    } catch (err) {
+      if (!res.writableEnded) {
+        const status = err instanceof HttpException ? err.getStatus() : 500;
+        if (!res.headersSent) res.status(status);
+
+        const message =
+          err instanceof HttpException
+            ? (() => {
+                const response = err.getResponse();
+                if (typeof response === "string") return response;
+                const m = (response as { message?: string | string[] }).message;
+                return Array.isArray(m) ? m.join(", ") : String(m ?? err.message);
+              })()
+            : toAiErrorMessage(err);
+
+        writeEvent("error", { message });
+      }
+    } finally {
+      if (!res.writableEnded) res.end();
+    }
   }
 }
