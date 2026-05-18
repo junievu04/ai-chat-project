@@ -17,7 +17,10 @@ interface ChatCtx {
 const ChatContext = createContext<ChatCtx | null>(null);
 
 export function ChatProvider({ children }: { children: ReactNode }) {
-  const [state, dispatch] = useReducer(chatReducer, { messages: {} });
+  const [state, dispatch] = useReducer(chatReducer, {
+    messages: {},
+    errors: {},
+  });
 
   return (
     <ChatContext.Provider value={{ state, dispatch }}>
@@ -36,4 +39,10 @@ export function useMessages(sessionId: string | null): Message[] {
   const { state } = useChatContext();
   if (!sessionId) return [];
   return state.messages[sessionId] ?? [];
+}
+
+export function useSessionError(sessionId: string | null): string | null {
+  const { state } = useChatContext();
+  if (!sessionId) return null;
+  return state.errors[sessionId] ?? null;
 }

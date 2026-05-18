@@ -24,6 +24,7 @@ export interface Session {
 
 export interface ChatState {
   messages: Record<string, Message[]>;
+  errors: Record<string, string>;
 }
 
 export interface SessionMessagesPage {

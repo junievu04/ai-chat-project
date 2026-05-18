@@ -1,6 +1,6 @@
 "use client";
 
-import { useChatContext } from "@/contexts/ChatContext";
+import { useChatContext, useSessionError } from "@/contexts/ChatContext";
 import { sendChatMessage } from "@/lib/api";
 import { formatChatError } from "@/lib/format-chat-error";
 import type { Attachment, Message } from "@/types";
@@ -14,9 +14,12 @@ export function useSendMessage(routeSessionId: string | null) {
   const { dispatch } = useChatContext();
   const [isLoading, setIsLoading] = useState(false);
   const [isStreaming, setIsStreaming] = useState(false);
-  const [sendError, setSendError] = useState<string | null>(null);
   const [sessionId, setSessionId] = useState(routeSessionId);
   const abortRef = useRef<AbortController | null>(null);
+  const skipAbortRef = useRef(false);
+
+  const errorKey = routeSessionId ?? sessionId ?? DRAFT_SESSION_KEY;
+  const sendError = useSessionError(errorKey);
 
   useEffect(() => {
     setSessionId(routeSessionId);
@@ -28,8 +31,25 @@ export function useSendMessage(routeSessionId: string | null) {
   }, [routeSessionId, dispatch]);
 
   useEffect(() => {
-    return () => abortRef.current?.abort();
+    return () => {
+      if (skipAbortRef.current) {
+        skipAbortRef.current = false;
+        return;
+      }
+      abortRef.current?.abort();
+    };
   }, []);
+
+  const setSendError = useCallback(
+    (key: string, message: string | null) => {
+      if (message) {
+        dispatch({ type: "SET_SESSION_ERROR", sessionId: key, message });
+      } else {
+        dispatch({ type: "CLEAR_SESSION_ERROR", sessionId: key });
+      }
+    },
+    [dispatch],
+  );
 
   const storageKey = sessionId ?? DRAFT_SESSION_KEY;
 
@@ -37,7 +57,10 @@ export function useSendMessage(routeSessionId: string | null) {
     async (prompt: string, attachments: Attachment[]) => {
       if (!prompt.trim() || isLoading) return;
 
-      setSendError(null);
+      setSendError(storageKey, null);
+      if (sessionId && sessionId !== storageKey) {
+        setSendError(sessionId, null);
+      }
 
       const tempUserId = `temp-user-${Date.now()}`;
       const tempAiId = `temp-ai-${Date.now()}`;
@@ -68,6 +91,10 @@ export function useSendMessage(routeSessionId: string | null) {
       let accumulated = "";
       let streamStarted = false;
 
+      const reportError = (raw: string) => {
+        setSendError(activeKey, formatChatError(raw));
+      };
+
       try {
         await sendChatMessage(
           prompt,
@@ -97,6 +124,7 @@ export function useSendMessage(routeSessionId: string | null) {
                   sessionId: DRAFT_SESSION_KEY,
                 });
                 window.dispatchEvent(new Event("session:created"));
+                skipAbortRef.current = true;
                 router.replace(`/chat/${sid}`);
               } else {
                 dispatch({
@@ -126,8 +154,9 @@ export function useSendMessage(routeSessionId: string | null) {
                 messageId: streamAiId,
                 message: aiMessage,
               });
+              setSendError(activeKey, null);
             },
-            onError: (message) => setSendError(formatChatError(message)),
+            onError: reportError,
           },
           controller.signal,
         );
@@ -147,21 +176,19 @@ export function useSendMessage(routeSessionId: string | null) {
             messageId: streamAiId,
           });
         }
-        setSendError(
-          formatChatError(
-            err instanceof Error ? err.message : "",
-          ),
-        );
+        reportError(err instanceof Error ? err.message : "");
       } finally {
         setIsLoading(false);
         setIsStreaming(false);
         abortRef.current = null;
       }
     },
-    [sessionId, dispatch, isLoading, router, storageKey],
+    [sessionId, dispatch, isLoading, router, storageKey, setSendError],
   );
 
-  const clearSendError = useCallback(() => setSendError(null), []);
+  const clearSendError = useCallback(() => {
+    setSendError(errorKey, null);
+  }, [errorKey, setSendError]);
 
   return {
     send,

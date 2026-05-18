@@ -22,7 +22,9 @@ export type ChatAction =
       message: Message;
     }
   | { type: "REMOVE"; sessionId: string; messageId: string }
-  | { type: "CLEAR_SESSION"; sessionId: string };
+  | { type: "CLEAR_SESSION"; sessionId: string }
+  | { type: "SET_SESSION_ERROR"; sessionId: string; message: string }
+  | { type: "CLEAR_SESSION_ERROR"; sessionId: string };
 
 export function chatReducer(state: ChatState, action: ChatAction): ChatState {
   switch (action.type) {
@@ -104,6 +106,17 @@ export function chatReducer(state: ChatState, action: ChatAction): ChatState {
         ...state,
         messages: { ...state.messages, [action.sessionId]: [] },
       };
+
+    case "SET_SESSION_ERROR":
+      return {
+        ...state,
+        errors: { ...state.errors, [action.sessionId]: action.message },
+      };
+
+    case "CLEAR_SESSION_ERROR": {
+      const { [action.sessionId]: _, ...rest } = state.errors;
+      return { ...state, errors: rest };
+    }
 
     default:
       return state;
