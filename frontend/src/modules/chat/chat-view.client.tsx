@@ -22,7 +22,8 @@ export default function ChatViewClient({ sessionId: routeSessionId }: Props) {
   const router = useRouter();
   const elementScrollRef = useRef<HTMLDivElement | null>(null);
   const [shouldLoadOlder, setShouldLoadOlder] = useState(false);
-  const { send, isTyping, sessionId } = useSendMessage(routeSessionId);
+  const { send, isTyping, sessionId, sendError, clearSendError } =
+    useSendMessage(routeSessionId);
   const { messages, showEmptyState, isLoadingMore } = useMessagePagination(
     sessionId,
     shouldLoadOlder,
@@ -121,7 +122,12 @@ export default function ChatViewClient({ sessionId: routeSessionId }: Props) {
       )}
 
       <Box flexShrink={0} px="5" pb="6" pt="2" bg="bg.subtle">
-        <InputBar onSend={send} isTyping={isTyping} />
+        <InputBar
+          onSend={send}
+          isTyping={isTyping}
+          error={sendError}
+          onDismissError={clearSendError}
+        />
       </Box>
     </Flex>
   );

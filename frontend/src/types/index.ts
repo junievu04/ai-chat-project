@@ -22,12 +22,6 @@ export interface Session {
   updatedAt: string;
 }
 
-export interface ChatResponse {
-  sessionId: string;
-  userMessage: Message;
-  aiMessage: Message;
-}
-
 export interface ChatState {
   messages: Record<string, Message[]>;
 }

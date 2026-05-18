@@ -1,9 +1,9 @@
 "use client";
 
 import { Text } from "@/components/text";
+import type { Attachment, Message } from "@/types";
 import { css } from "@/vendors/styled-system/css";
 import { Box, Flex, styled } from "@/vendors/styled-system/jsx";
-import type { Attachment, Message } from "@/types";
 import { Icon } from "@iconify/react";
 import ReactMarkdown from "react-markdown";
 
@@ -148,7 +148,12 @@ export function MessageBubble({ message }: Props) {
           Template.net
         </Text>
 
-        <Box className="ai-prose" fontSize="sm" lineHeight="relaxed" color="text">
+        <Box
+          className="ai-prose"
+          fontSize="sm"
+          lineHeight="relaxed"
+          color="text"
+        >
           <ReactMarkdown>{message.content}</ReactMarkdown>
         </Box>
       </Flex>

@@ -1,6 +1,7 @@
 "use client";
 
 import { Button } from "@/components/button";
+import { Text } from "@/components/text";
 import { uploadFile } from "@/lib/api";
 import type { Attachment } from "@/types";
 import { css } from "@/vendors/styled-system/css";
@@ -11,6 +12,8 @@ import { useCallback, useRef, useState, type KeyboardEvent } from "react";
 interface Props {
   onSend: (prompt: string, attachments: Attachment[]) => void;
   isTyping: boolean;
+  error?: string | null;
+  onDismissError?: () => void;
 }
 
 const ACCEPTED =
@@ -67,7 +70,12 @@ const TextArea = styled("textarea", {
   },
 });
 
-export function InputBar({ onSend, isTyping }: Props) {
+export function InputBar({
+  onSend,
+  isTyping,
+  error,
+  onDismissError,
+}: Props) {
   const [text, setText] = useState("");
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [uploading, setUploading] = useState(false);
@@ -120,7 +128,31 @@ export function InputBar({ onSend, isTyping }: Props) {
   const canSend = text.trim().length > 0 && !isTyping && !uploading;
 
   return (
-    <InputShell>
+    <Box maxW="3xl" mx="auto" w="full">
+      {error && (
+        <Flex alignItems="center" gap="1.5" mb="2" px="1" role="alert">
+          <Icon icon="solar:danger-circle-bold" width={14} color="#ef4444" />
+          <Text variant="caption" tone="error" flex="1" truncate>
+            {error}
+          </Text>
+          {onDismissError && (
+            <Button
+              variant="none"
+              size="sm"
+              aria-label="Dismiss"
+              onClick={onDismissError}
+              minH="6"
+              w="6"
+              p="0"
+              color="text.faint"
+              flexShrink={0}
+            >
+              <Icon icon="solar:close-circle-linear" width={16} />
+            </Button>
+          )}
+        </Flex>
+      )}
+      <InputShell>
       {attachments.length > 0 && (
         <Flex
           flexWrap="wrap"
@@ -247,5 +279,6 @@ export function InputBar({ onSend, isTyping }: Props) {
         </Button>
       </Flex>
     </InputShell>
+    </Box>
   );
 }
