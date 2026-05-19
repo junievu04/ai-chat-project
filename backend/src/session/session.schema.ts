@@ -7,9 +7,6 @@ export type SessionDocument = Session & Document;
 export class Session {
   @Prop({ default: "New Chat" })
   title: string;
-
-  @Prop({ default: 0 })
-  messageCount: number;
 }
 
 export const SessionSchema = SchemaFactory.createForClass(Session);

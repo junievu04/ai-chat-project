@@ -1,4 +1,8 @@
-import { BadRequestException, Injectable } from "@nestjs/common";
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from "@nestjs/common";
 import { InjectModel } from "@nestjs/mongoose";
 import { Model, Types } from "mongoose";
 import { Session, SessionDocument } from "../session/session.schema";
@@ -33,9 +37,10 @@ export class ChatService {
 
     if (sessionId) {
       session = await this.sessionModel.findById(sessionId);
-    }
-
-    if (!session) {
+      if (!session) {
+        throw new NotFoundException("Session not found");
+      }
+    } else {
       session = await this.sessionModel.create({
         title: prompt.slice(0, 60) + (prompt.length > 60 ? "…" : ""),
       });
@@ -49,6 +54,10 @@ export class ChatService {
     });
 
     const sid = String(session._id);
+
+    await this.sessionModel.findByIdAndUpdate(session._id, {
+      updatedAt: new Date(),
+    });
 
     yield {
       type: "meta",
@@ -94,7 +103,6 @@ export class ChatService {
     });
 
     await this.sessionModel.findByIdAndUpdate(session._id, {
-      $inc: { messageCount: 2 },
       updatedAt: new Date(),
     });
 

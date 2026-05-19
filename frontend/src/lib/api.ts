@@ -35,12 +35,6 @@ export const fetchSessionMessages = (
   );
 };
 
-export const createSession = (): Promise<Session> =>
-  apiFetch<Session>("/api/sessions", {
-    method: "POST",
-    body: JSON.stringify({}),
-  });
-
 export const deleteSession = (sessionId: string): Promise<void> =>
   apiFetch(`/api/sessions/${sessionId}`, { method: "DELETE" });
 

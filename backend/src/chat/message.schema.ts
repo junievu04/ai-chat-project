@@ -12,7 +12,7 @@ class Attachment {
 
 @Schema({ timestamps: true })
 export class Message {
-  @Prop({ type: Types.ObjectId, ref: "Session", required: true, index: true })
+  @Prop({ type: Types.ObjectId, ref: "Session", required: true })
   sessionId: Types.ObjectId;
 
   @Prop({ enum: ["user", "assistant"], required: true })
@@ -29,3 +29,5 @@ export class Message {
 }
 
 export const MessageSchema = SchemaFactory.createForClass(Message);
+
+MessageSchema.index({ sessionId: 1, createdAt: -1 });
