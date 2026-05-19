@@ -7,8 +7,8 @@ import { QueryProvider } from "src/vendors/tanstack-query/provider";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: { default: "AI Chat", template: "%s | AI Chat" },
-  description: "AI-powered chat assistant powered by Gemini",
+  title: { default: "TEMPLATE.net", template: "%s | TEMPLATE.net" },
+  description: "AI-powered chat assistant powered by Groq",
   icons: { icon: "/favicon.ico" },
 };
 
