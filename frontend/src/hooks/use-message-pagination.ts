@@ -72,11 +72,31 @@ export function useMessagePagination(
   };
 }
 
+/**
+ * Merges paginated history with in-flight messages from ChatContext.
+ * Live tail keeps reducer order (user → assistant) instead of re-sorting by
+ * createdAt, which breaks when server user timestamps differ from client placeholders.
+ */
 function mergeMessages(fetched: Message[], live: Message[]): Message[] {
-  if (!live.length) return fetched;
-  const map = new Map(fetched.map((m) => [m._id, m]));
-  for (const m of live) map.set(m._id, m);
-  return [...map.values()].sort(
-    (a, b) => +new Date(a.createdAt) - +new Date(b.createdAt),
-  );
+  if (!live.length) return sortByCreatedAt(fetched);
+
+  const byId = new Map(fetched.map((m) => [m._id, m]));
+  for (const m of live) byId.set(m._id, m);
+
+  const liveIds = new Set(live.map((m) => m._id));
+  const historical = sortByCreatedAt(fetched)
+    .filter((m) => !liveIds.has(m._id))
+    .map((m) => byId.get(m._id)!);
+  const liveBlock = live.map((m) => byId.get(m._id)!);
+
+  return [...historical, ...liveBlock];
+}
+
+function sortByCreatedAt(messages: Message[]): Message[] {
+  return [...messages].sort((a, b) => {
+    const diff = +new Date(a.createdAt) - +new Date(b.createdAt);
+    if (diff !== 0) return diff;
+    if (a.role !== b.role) return a.role === "user" ? -1 : 1;
+    return a._id.localeCompare(b._id);
+  });
 }
