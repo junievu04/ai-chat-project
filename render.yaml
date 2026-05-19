@@ -1,0 +1,12 @@
+# Render Blueprint — backend only (frontend deploy on Vercel)
+# https://render.com/docs/blueprint-spec
+services:
+  - type: web
+    name: ai-chat-backend
+    runtime: node
+    rootDir: backend
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    envVars:
+      - key: NODE_VERSION
+        value: "20"
