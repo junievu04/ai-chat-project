@@ -2,7 +2,19 @@
 
 Full-stack AI chat app: Next.js UI, NestJS API, conversations stored in MongoDB, streaming replies via Groq (SSE).
 
+## Live demo (production)
+
+
+| Service  | Platform                     | URL                                                                                                  |
+| -------- | ---------------------------- | ---------------------------------------------------------------------------------------------------- |
+| Frontend | [Vercel](https://vercel.com) | [https://ai-chat-template-project.vercel.app/chat](https://ai-chat-template-project.vercel.app/chat) |
+| Backend  | [Render](https://render.com) | [https://ai-chat-backend-ctkj.onrender.com/api](https://ai-chat-backend-ctkj.onrender.com/api) |
+
+
+Open the chat UI at **[/chat](https://ai-chat-template-project.vercel.app/chat)** (new conversation) or pick a session from the sidebar.
+
 ## Tech stack
+
 
 | Layer    | Technology                                                   |
 | -------- | ------------------------------------------------------------ |
@@ -11,6 +23,7 @@ Full-stack AI chat app: Next.js UI, NestJS API, conversations stored in MongoDB,
 | Database | MongoDB                                                      |
 | AI       | Groq (Llama)                                                 |
 | Upload   | Cloudinary (images / PDF / files)                            |
+
 
 ## Repository structure
 
@@ -105,15 +118,9 @@ npm run panda
 
 App: `http://localhost:3000` → redirects to `/chat`.
 
-### Demo data (optional)
-
-```bash
-cd backend
-npm run seed:demo          # Add sample sessions + messages
-npm run seed:demo:reset    # Clear and re-seed
-```
-
 ## Production build
+
+Local production-style run (same machines as dev):
 
 ```bash
 # Backend
@@ -127,7 +134,68 @@ npm run build
 npm start
 ```
 
+## Production deployment
+
+The project is deployed as **two separate services**: frontend on Vercel, backend on Render (see [`render.yaml`](render.yaml)).
+
+| | URL |
+| --- | --- |
+| Production UI | https://ai-chat-template-project.vercel.app/chat |
+| Production API (base) | https://ai-chat-backend-ctkj.onrender.com |
+| Production API (prefix) | https://ai-chat-backend-ctkj.onrender.com/api |
+
+### Frontend (Vercel)
+
+
+| Setting        | Value                                               |
+| -------------- | --------------------------------------------------- |
+| Root directory | `frontend`                                          |
+| Build command  | `npm run build` (runs Panda codegen + `next build`) |
+| Output         | Next.js default                                     |
+
+
+**Environment variables** (Vercel project settings):
+
+```env
+NEXT_PUBLIC_API_URL=https://ai-chat-backend-ctkj.onrender.com
+```
+
+The app appends `/api` in code (e.g. `GET .../api/sessions`, `POST .../api/chat`).
+
+### Backend (Render)
+
+
+| Setting        | Value                          |
+| -------------- | ------------------------------ |
+| Root directory | `backend`                      |
+| Build command  | `npm install && npm run build` |
+| Start command  | `npm start`                    |
+
+
+**Environment variables** (Render dashboard):
+
+```env
+PORT=4000
+FRONTEND_URL=https://ai-chat-template-project.vercel.app
+MONGODB_URI=<mongodb-atlas-uri>
+GROQ_API_KEY=<your_groq_api_key>
+GROQ_MODEL=llama-3.3-70b-versatile
+CLOUDINARY_CLOUD_NAME=
+CLOUDINARY_API_KEY=
+CLOUDINARY_API_SECRET=
+```
+
+- `**FRONTEND_URL**` must match the Vercel origin exactly (no trailing slash) so CORS allows the live UI.
+- After changing env vars on either service, redeploy that service.
+
+### Checklist after deploy
+
+1. Backend health: `GET https://ai-chat-backend-ctkj.onrender.com/api/sessions` returns JSON (may be `[]`).
+2. Frontend loads [https://ai-chat-template-project.vercel.app/chat](https://ai-chat-template-project.vercel.app/chat) without CORS errors in the browser console.
+3. Send a test message — user bubble and streamed AI reply appear in order.
+
 ## Main API (prefix `/api`)
+
 
 | Method   | Path                           | Description                        |
 | -------- | ------------------------------ | ---------------------------------- |
@@ -139,6 +207,7 @@ npm start
 | `POST`   | `/chat`                        | Send message + stream AI (**SSE**) |
 | `POST`   | `/upload`                      | Upload file (multipart)            |
 
+
 ### Send-message flow (`POST /api/chat`)
 
 A single request handles everything — there is **no** separate POST endpoint per message.
@@ -146,14 +215,15 @@ A single request handles everything — there is **no** separate POST endpoint p
 1. Create a session (if `sessionId` is null).
 2. Save the **user message** to MongoDB.
 3. Stream SSE events:
-   - `meta` — `sessionId`, `userMessage`
-   - `chunk` — AI text fragments
-   - `done` — `aiMessage` persisted in DB
-   - `error` — failure (quota, rate limit, …) with a short user-facing message
+  - `meta` — `sessionId`, `userMessage`
+  - `chunk` — AI text fragments
+  - `done` — `aiMessage` persisted in DB
+  - `error` — failure (quota, rate limit, …) with a short user-facing message
 
 The frontend reads the stream in `frontend/src/lib/api.ts` (`sendChatMessage`) and updates the UI via `useSendMessage`.
 
 ## Frontend layout
+
 
 | Path                           | Role                                                   |
 | ------------------------------ | ------------------------------------------------------ |
@@ -166,14 +236,17 @@ The frontend reads the stream in `frontend/src/lib/api.ts` (`sendChatMessage`) a
 | `hooks/use-message-pagination` | Infinite scroll for older messages (React Query)       |
 | `lib/api.ts`                   | REST fetch + SSE chat                                  |
 
+
 ## Backend layout
 
-| Module     | Role                                                                               |
-| ---------- | ---------------------------------------------------------------------------------- |
-| `chat/`    | `ChatController` (SSE), `ChatService` (orchestration), `AiService` (Groq stream)     |
-| `session/` | Session/message schemas, services, pagination                                      |
-| `upload/`  | Multer + Cloudinary                                                                |
-| `common/`  | HTTP logger, `AllExceptionsFilter`                                                 |
+
+| Module     | Role                                                                             |
+| ---------- | -------------------------------------------------------------------------------- |
+| `chat/`    | `ChatController` (SSE), `ChatService` (orchestration), `AiService` (Groq stream) |
+| `session/` | Session/message schemas, services, pagination                                    |
+| `upload/`  | Multer + Cloudinary                                                              |
+| `common/`  | HTTP logger, `AllExceptionsFilter`                                               |
+
 
 ## Groq API — limits & warnings
 
@@ -183,23 +256,25 @@ The frontend reads the stream in `frontend/src/lib/api.ts` (`sendChatMessage`) a
 
 Values below are from [Groq rate limits docs](https://console.groq.com/docs/rate-limits) (Developer / free-tier baseline, May 2026). Other models have different caps.
 
-| Limit type | Abbrev. | Value | Meaning |
-| ---------- | ------- | ----- | ------- |
-| Requests per minute | **RPM** | **30** | Max ~30 chat API calls per minute |
-| Requests per day | **RPD** | **1,000** | Max ~1,000 chat API calls per day |
-| Tokens per minute | **TPM** | **12,000** | Max input + output tokens processed per minute |
-| Tokens per day | **TPD** | **100,000** | Max tokens per day across all requests |
+
+| Limit type          | Abbrev. | Value       | Meaning                                        |
+| ------------------- | ------- | ----------- | ---------------------------------------------- |
+| Requests per minute | **RPM** | **30**      | Max ~30 chat API calls per minute              |
+| Requests per day    | **RPD** | **1,000**   | Max ~1,000 chat API calls per day              |
+| Tokens per minute   | **TPM** | **12,000**  | Max input + output tokens processed per minute |
+| Tokens per day      | **TPD** | **100,000** | Max tokens per day across all requests         |
+
 
 You can hit **RPM** before **TPM** (e.g. many short messages) or run out of **TPD** with fewer, longer conversations. Cached prompt tokens (if enabled on your account) do not count toward limits.
 
 ### App-level token cap
 
-In `backend/src/chat/ai.service.ts`, each reply is capped at **`max_completion_tokens: 1500`** (Groq output only). That does **not** remove Groq’s TPM/TPD limits — long **chat history** still increases **input tokens** on every request.
+In `backend/src/chat/ai.service.ts`, each reply is capped at `**max_completion_tokens: 1500`** (Groq output only). That does **not** remove Groq’s TPM/TPD limits — long **chat history** still increases **input tokens** on every request.
 
 ### When limits are exceeded
 
-- Groq returns HTTP **`429 Too Many Requests`**.
-- This app still saves the **user message**; the SSE stream emits an **`error`** event and the UI shows a short message (rate limit / quota).
+- Groq returns HTTP `**429 Too Many Requests`**.
+- This app still saves the **user message**; the SSE stream emits an `**error`** event and the UI shows a short message (rate limit / quota).
 - Response headers may include `retry-after`, `x-ratelimit-remaining-requests`, `x-ratelimit-remaining-tokens`, etc. See [rate limit headers](https://console.groq.com/docs/rate-limits#rate-limit-headers).
 
 ### Practical tips
@@ -211,10 +286,13 @@ In `backend/src/chat/ai.service.ts`, each reply is capped at **`max_completion_t
 
 ## Operations notes
 
-- **CORS:** The backend only allows the origin set in `FRONTEND_URL` (default `http://localhost:3000`).
-- **MongoDB:** Verify `MONGODB_URI` before running `npm run dev` in the backend.
+- **CORS:** The backend only allows the origin set in `FRONTEND_URL` (local: `http://localhost:3000`; production: `https://ai-chat-template-project.vercel.app`).
+- **MongoDB:** Verify `MONGODB_URI` before running `npm run dev` in the backend or deploying to Render.
+- **Production UI:** [https://ai-chat-template-project.vercel.app/chat](https://ai-chat-template-project.vercel.app/chat)
+- **Production API:** [https://ai-chat-backend-ctkj.onrender.com/api](https://ai-chat-backend-ctkj.onrender.com/api)
 
 ## Scripts reference
+
 
 | Location    | Command                       | Description                  |
 | ----------- | ----------------------------- | ---------------------------- |
@@ -223,3 +301,5 @@ In `backend/src/chat/ai.service.ts`, each reply is capped at **`max_completion_t
 | `frontend/` | `npm run dev`                 | Next.js dev server           |
 | `frontend/` | `npm run build`               | Panda codegen + `next build` |
 | `frontend/` | `npm run lint`                | ESLint                       |
+
+
