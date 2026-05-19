@@ -26,7 +26,9 @@ export class ChatService {
     private aiService: AiService,
   ) {}
 
-  async *sendMessageStream(dto: SendMessageDto): AsyncGenerator<ChatStreamEvent> {
+  async *sendMessageStream(
+    dto: SendMessageDto,
+  ): AsyncGenerator<ChatStreamEvent> {
     const { prompt, sessionId, attachments = [] } = dto;
 
     if (!prompt?.trim()) {
@@ -54,10 +56,6 @@ export class ChatService {
     });
 
     const sid = String(session._id);
-
-    await this.sessionModel.findByIdAndUpdate(session._id, {
-      updatedAt: new Date(),
-    });
 
     yield {
       type: "meta",
@@ -115,7 +113,15 @@ export class ChatService {
   }
 
   private toMessagePayload(
-    msg: MessageDocument | { _id: Types.ObjectId; role: string; content: string; attachments?: unknown[]; createdAt?: Date },
+    msg:
+      | MessageDocument
+      | {
+          _id: Types.ObjectId;
+          role: string;
+          content: string;
+          attachments?: unknown[];
+          createdAt?: Date;
+        },
     sessionId: string,
   ) {
     return {
@@ -124,7 +130,8 @@ export class ChatService {
       role: msg.role,
       content: msg.content,
       attachments: msg.attachments ?? [],
-      createdAt: (msg as MessageDocument).createdAt?.toISOString?.() ??
+      createdAt:
+        (msg as MessageDocument).createdAt?.toISOString?.() ??
         new Date().toISOString(),
     };
   }
